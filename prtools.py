@@ -30,6 +30,7 @@ class prdataset(object):
         self.name = ''
         self.setdata(data)
         self.labels = labels
+        self.featlab = numpy.arange(data.shape[1])
         self.prior = []
         self.user = []
 
@@ -72,7 +73,8 @@ class prdataset(object):
         #print('   other='+str(other))
         newd = copy.deepcopy(self)
         if (isinstance(other,prmapping)):
-            return other(newd)
+            newother = copy.deepcopy(other)
+            return newother(newd)
         elif (isinstance(other,prdataset)):
             other = other.float()
         newd.data *= other
@@ -165,21 +167,26 @@ class prdataset(object):
 class prmapping(object):
     "Prmapping in python"
 
-    def __init__(self,mapping_file,*args):
-        self.mapping_file = mapping_file
-        self.mapping_type = 'untrained'
-        self.args = ()
-        if (len(args)==0):
-            self.name = mapping_file('untrained') 
-        else:
-            self.name,self.args = mapping_file('untrained',args) 
-        self.data = []
+    def __init__(self,mapping_func,x=[],hyperp=[]):
+        # exception: then only hyperp are given
+        if (not isinstance(x,prdataset)) and (not hyperp): 
+            hyperp = x
+            x = []
+        self.mapping_func = mapping_func
+        self.mapping_type = "untrained"
+        self.name, self.hyperparam = self.mapping_func("untrained",hyperp)
+        self.data = () 
+        self.labels = ()
         self.size_in = 0
         self.size_out = 0
         self.user = []
+        if isinstance(x,prdataset):
+            self = self.train(x)
+        #print(self.mapping_type)
+
 
     def __repr__(self):
-        return "prmapping("+self.mapping_file.func_name+","+self.mapping_type+")"
+        return "prmapping("+self.mapping_func.func_name+","+self.mapping_type+")"
     def __str__(self):
         outstr = ""
         if (len(self.name)>0):
@@ -191,6 +198,7 @@ class prmapping(object):
         else:
             raise ValueError('Mapping type is not defined.')
         return outstr
+
     def __shape__(self):
         return
     def shape(self,I=None):
@@ -204,25 +212,51 @@ class prmapping(object):
         else:
             return (self.size_in,self.size_out)
 
+    def init(self,mappingfunc,**kwargs):
+        self.mapping_func = mappingfunc
+        self.mapping_type = "untrained"
+        self.hyperparam = kwargs
+        self = self.mapping_func('init',kwargs)
+        return self
+
+    def train(self,x,args=None):
+        # train
+        # maybe the supplied parameters overrule the stored ones:
+        if args is not None:
+            self.hyperparam = args
+        if (len(self.hyperparam)==0):
+            self.data,self.labels = self.mapping_func('train',x)
+        else:
+            self.data,self.labels = self.mapping_func('train',x,self.hyperparam)
+        self.mapping_type = 'trained'
+        # set the input and output sizes 
+        if (hasattr(x,'shape')):  # combiners do not eat datasets
+            self.size_in = x.shape(1)
+            # and the output size?
+            xx = +x[0,:]   # hmmm??
+            out = self.mapping_func("eval",xx,self)
+            self.size_out = out.shape[1]
+        return self
+
+    def eval(self,x):
+        # evaluate
+        out = self.mapping_func("eval",+x,self) # good idea to only supply data?
+        if isinstance(x,prdataset):
+            x.data = out
+            x.featlab = self.labels
+            x.size_out = out.shape[1]
+            return x
+        else:
+            return out
+
     def __call__(self,x):
         if (self.mapping_type=="untrained"):
             # train
-            self = copy.deepcopy(self)  # shit shit shit python
-            self.mapping_type = 'trained'
-            if (len(self.args)==0):
-                self.data = self.mapping_file('train',x)
-            else:
-                self.data = self.mapping_file('train',x,*(self.args))
-            if (hasattr(x,'shape')):  # combiners do not eat datasets
-                self.size_in = x.shape(1)
-                # and the output size?
-                xx = +x[0,:]   # hmmm??
-                out = self.mapping_file(self.data,xx)
-                self.size_out = out.shape[1]
-            return self
+            out = self.train(x)
+            return out
         elif (self.mapping_type=="trained"):
             # evaluate
-            out = self.mapping_file(self.data,x)
+            out = self.eval(x)
             return out
         else:
             print(self.mapping_type)
@@ -333,75 +367,88 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
 
 # === mappings ===============================
 
-def scalem(w,x=None):
+def scalem(task=None,x=None,w=None):
     "Scale mapping"
-    if isinstance(w,basestring):
-        if (w=='untrained'):
-            # just return the name
-            return 'Scalem'
-        else:
-            # we are going to train the mapping
-            mn = numpy.mean(+x,axis=0)
-            sc = numpy.std(+x,axis=0)
-            return mn,sc
-    else:
+    if not isinstance(task,basestring):
+        out = prmapping(scalem,task)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'Scalem', ()
+    elif (task=="train"):
+        # we are going to train the mapping
+        mn = numpy.mean(+x,axis=0)
+        sc = numpy.std(+x,axis=0)
+        # return the parameters, and feature labels
+        labels = x.featlab
+        return (mn,sc), x.featlab
+    elif (task=="eval"):
         # we are applying to new data
-        x = x-w[0]
-        x = x/w[1]
+        W = w.data   # get the parameters out
+        x = x-W[0]
+        x = x/W[1]
         return x
-
-def proxm(w,x=None,*args):
-    "Proximity mapping"
-    if isinstance(w,basestring):
-        if (w=='untrained'):
-            # just return the name
-            return 'Proxm',x
-        else:
-            # we only need to store the repr. set
-            if (isinstance(x,prdataset)):
-                R = +x
-            else:
-                R = numpy.copy(x)
-            if (args[0]=='eucl'):
-                return 'eucl',R
-            if (args[0]=='city'):
-                return 'city',R
-            elif (args[0]=='rbf'):
-                return 'rbf',R,args[1]
-            else:
-                raise ValueError('Proxm type not defined')
     else:
+        print(task)
+        raise ValueError('This task is *not* defined for scalem.')
+
+def proxm(task=None,x=None,w=None):
+    "Proximity mapping"
+    if not isinstance(task,basestring):
+        #print("inside proxm:")
+        #print(task)
+        #print(x)
+        out = prmapping(proxm,task,x)  # store hyperparams
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparams
+        return 'Proxm',x
+    elif (task=="train"):
+        # we only need to store the representation set
+        if (isinstance(x,prdataset)):
+            R = +x
+        else:
+            R = numpy.copy(x)
+        if (w[0]=='eucl'):
+            return ('eucl',R), numpy.arange(R.shape[1])
+        if (w[0]=='city'):
+            return ('city',R), numpy.arange(R.shape[1])
+        elif (w[0]=='rbf'):
+            return ('rbf',R,w[1]), numpy.arange(R.shape[1])
+        else:
+            raise ValueError('Proxm type not defined')
+    elif (task=="eval"):
         # we are applying to new data:
+        W = w.data
         dat = +x
         n0 = dat.shape[0]
-        n1 = w[1].shape[0]
-        if (w[0]=='eucl'):
+        n1 = W[1].shape[0]
+        if (W[0]=='eucl'):
             D = numpy.zeros((n0,n1))
             for i in range(0,n0):
                 for j in range(0,n1):
-                    df = dat[i,:] - w[1][j,:]
+                    df = dat[i,:] - W[1][j,:]
                     D[i,j] = numpy.dot(df.T,df)
-        elif (w[0]=='city'):
+        elif (W[0]=='city'):
             D = numpy.zeros((n0,n1))
             for i in range(0,n0):
                 for j in range(0,n1):
-                    df = dat[i,:] - w[1][j,:]
+                    df = dat[i,:] - W[1][j,:]
                     D[i,j] = numpy.sum(numpy.abs(df))
-        elif (w[0]=='rbf'):
-            s = w[2]*w[2]
+        elif (W[0]=='rbf'):
+            s = W[2]*W[2]
             D = numpy.zeros((n0,n1))
             for i in range(0,n0):
                 for j in range(0,n1):
-                    df = dat[i,:] - w[1][j,:]
+                    df = dat[i,:] - W[1][j,:]
                     d = numpy.dot(df.T,df)
                     D[i,j] = numpy.exp(-d/s)
         else:
             raise ValueError('Proxm type not defined')
-        if isinstance(x,prdataset):
-            x.setdata(D)
-            return x
-        else:
-            return D
+        return D
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for proxm.')
 
 
 def softmax(w,x=None):
@@ -433,13 +480,18 @@ def nmc(w,x=None):
             return 'Nearest mean'
         else:
             # we are going to train the mapping
+            print(x.lablist())
             x0 = x.seldat(0)
             x1 = x.seldat(1)
             mn0 = numpy.mean(+x0,axis=0)
             mn1 = numpy.mean(+x1,axis=0)
-            return numpy.vstack((mn0,mn1))
+            # store the parameters, and labels:
+            return numpy.vstack((mn0,mn1)),x.lablist()
     else:
         # we are applying to new data
+        print("In application of nmc:")
+        print(w)
+        print(x)
         out = sqeucldistm(+x,w)
         df = out[:,1] - out[:,0]
         df = df[:,numpy.newaxis]  # python is soooo stupid
@@ -448,6 +500,7 @@ def nmc(w,x=None):
             return x
         else:
             return df
+
 
 # === datasets ===============================
 def genclass(n,p):
@@ -498,31 +551,32 @@ def gendat(x,n):
     if (n[i]==clsz[i]):
         # take a bootstrap sample:
         I = numpy.random.randint(0,n[i],n[i])
-        out = x1[I,:]
     elif (n[i]<clsz[i]):
         I = numpy.random.permutation(clsz[i])
         I = I[0:int(n[i])]
-        out = x1[I,:]
     else:
         I = numpy.random.randint(clsz[i],size=int(n[i]))
-        out = x1[I,:]
+    out = x1[I,:]
+    allI = numpy.arange(clsz[i])
+    J = numpy.setdiff1d(allI,I)
+    leftout = x1[J,:]
     # now the other classes:
     for i in range(1,nrcl):
         xi = x.seldat(i)
         if (n[i]==clsz[i]):
             # take a bootstrap sample:
             I = numpy.random.randint(0,n[i],n[i])
-            outi = xi[I,:]
         elif (n[i]<clsz[i]):
             I = numpy.random.permutation(clsz[i])
             I = I[0:int(n[i])]
-            outi = xi[I,:]
         else:
             I = numpy.random.randint(clsz[i],size=int(n[i]))
-            outi = xi[I,:]
-        out = out.concatenate(outi)
+        out = out.concatenate(xi[I,:])
+        allI = numpy.arange(clsz[i])
+        J = numpy.setdiff1d(allI,I)
+        leftout = leftout.concatenate(xi[J,:])
 
-    return out
+    return out,leftout
 
 
 def gendats(n,dim=2,delta=2.):
