@@ -254,7 +254,8 @@ class prmapping(object):
         if ((len(self.labels)>0) and (out.shape[1] != len(self.labels))):
             print(len(self.labels))
             raise ValueError('Output of mapping does not match number of labels.')
-        if isinstance(x,prdataset):
+        #if isinstance(x,prdataset):
+        if (len(self.labels)>0):  # is this better than above?
             x.data = out
             x.featlab = self.labels
             x.size_out = out.shape[1]
@@ -517,7 +518,6 @@ def nmc(task=None,x=None,w=None):
         mn0 = numpy.mean(+x0,axis=0)
         mn1 = numpy.mean(+x1,axis=0)
         # store the parameters, and labels:
-        print(x.lablist())
         return numpy.vstack((mn0,mn1)),x.lablist()
     elif (task=="eval"):
         # we are applying to new data
