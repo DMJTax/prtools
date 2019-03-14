@@ -245,6 +245,8 @@ class prmapping(object):
         if (self.mapping_type=="untrained"):
             raise ValueError('The mapping is not trained and cannot be evaluated.')
         out = self.mapping_func("eval",+x,self) # good idea to only supply data?
+        if (out.shape[1] != len(self.labels)):
+            raise ValueError('Output of mapping does not match number of labels.')
         if isinstance(x,prdataset):
             x.data = out
             x.featlab = self.labels
@@ -467,34 +469,33 @@ def classc():
     w.mapping_type = 'trained'
     return w
 
-def nmc(w,x=None):
+def nmc(task=None,x=None,w=None):
     "Nearest mean classifier"
-    if isinstance(w,basestring):
-        if (w=='untrained'):
-            # just return the name
-            return 'Nearest mean'
-        else:
-            # we are going to train the mapping
-            print(x.lablist())
-            x0 = x.seldat(0)
-            x1 = x.seldat(1)
-            mn0 = numpy.mean(+x0,axis=0)
-            mn1 = numpy.mean(+x1,axis=0)
-            # store the parameters, and labels:
-            return numpy.vstack((mn0,mn1)),x.lablist()
-    else:
+    if not isinstance(task,basestring):
+        out = prmapping(nmc,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'Nearest mean', ()
+    elif (task=="train"):
+        # we are going to train the mapping
+        print(x.lablist())
+        x0 = x.seldat(0)
+        x1 = x.seldat(1)
+        mn0 = numpy.mean(+x0,axis=0)
+        mn1 = numpy.mean(+x1,axis=0)
+        # store the parameters, and labels:
+        return numpy.vstack((mn0,mn1)),x.lablist()
+    elif (task=="eval"):
         # we are applying to new data
-        print("In application of nmc:")
-        print(w)
-        print(x)
-        out = sqeucldistm(+x,w)
+        W = w.data
+        out = sqeucldistm(+x,W)
         df = out[:,1] - out[:,0]
         df = df[:,numpy.newaxis]  # python is soooo stupid
-        if isinstance(x,prdataset):
-            x.setdata(df)
-            return x
-        else:
-            return df
+        return numpy.hstack((df,-df))
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for scalem.')
 
 
 # === datasets ===============================
