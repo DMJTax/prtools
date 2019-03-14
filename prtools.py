@@ -168,7 +168,7 @@ class prmapping(object):
     "Prmapping in python"
 
     def __init__(self,mapping_func,x=[],hyperp=[]):
-        # exception: then only hyperp are given
+        # exception: when only hyperp are given
         if (not isinstance(x,prdataset)) and (not hyperp): 
             hyperp = x
             x = []
@@ -221,6 +221,8 @@ class prmapping(object):
 
     def train(self,x,args=None):
         # train
+        if (self.mapping_type=="trained"):
+            raise ValueError('The mapping is already trained and will be retrained.')
         # maybe the supplied parameters overrule the stored ones:
         if args is not None:
             self.hyperparam = args
@@ -240,6 +242,8 @@ class prmapping(object):
 
     def eval(self,x):
         # evaluate
+        if (self.mapping_type=="untrained"):
+            raise ValueError('The mapping is not trained and cannot be evaluated.')
         out = self.mapping_func("eval",+x,self) # good idea to only supply data?
         if isinstance(x,prdataset):
             x.data = out
@@ -280,58 +284,52 @@ class prmapping(object):
         else:
             raise ValueError('Prmapping times something not defined.')
 
-def sequential(w,x=None):
-    "Sequential mapping"
-    #print "sequential: w=",w
-    #print "sequential: x=",x
-    if isinstance(w,basestring):
-        if (w=='untrained'):
-            return 'Sequential'
-        else: #train the mapping
-            # nothing more than save the mappings:
-            return x
-    #if isinstance(x,prdataset):  # evaluate
-    if (True):
-        # now it depends which mappings are already trained or not
-        if (w[0].mapping_type=='untrained'):
-            newm = prmapping(sequential)
-            # train the first one:
-            w0 = w[0](x)
-            newm.size_in = w0.size_in
-            if (w[1].mapping_type=='untrained'):
-                # map data and train the second mapping:
-                out = w0(x)
-                w1 = w[1](out)
-                # output the combination:
-                newm.data = (w0,w1)
-                newm.size_out = w1.size_out
-            else:
-                # just output the fully trained mapping:
-                newm.data = (w0,w[1])
-                newm.size_out = w[1].size_out
-            newm.mapping_type = 'trained'
-            return newm
 
-        else: # first mapping is trained, and the second?
-            # map data 
-            newx = w[0](x)
-            if (w[1].mapping_type=='untrained'):
-                newm = prmapping(sequential)
-                newm.size_in = w[0].size_in
-                # train the second mapping:
-                print("In sequential, first is trained, second now?")
-                print(newx)
-                print(w[1].mapping_type)
-                w1 = w[1](newx)
-                newm.data = (w[0],w1)
-                newm.size_out = w1.size_out
-                newm.mapping_type = 'trained'
-                return newm
-            else:
-                # all is trained already!
-                return w[1](newx)
-    else: # evaluate:
-        raise ValueError('This combination with sequential looks strange.')
+def sequentialm(task=None,x=None,w=None):
+    "Sequential mapping"
+    if not isinstance(task,basestring):
+        # we should have gotten a list of two prmappings
+        if not isinstance(task,tuple):
+            raise ValueError('Sequential map expects a list of 2 prmappings.')
+        if not isinstance(task[0],prmapping):
+            raise ValueError('Sequential map expects a list of 2 prmappings.')
+        if not isinstance(task[1],prmapping):
+            raise ValueError('Sequential map expects a list of 2 prmappings.')
+        newm = copy.deepcopy(task)
+        if (newm[0].mapping_type=='trained') and (newm[1].mapping_type=='trained'):
+            # now the seq.map is already trained:
+            if (newm[0].size_out != newm[1].size_in):
+                raise ValueError('Output size map1 does not match input size map2.')
+            w = prmapping(sequentialm)
+            w.data = newm
+            w.labels = newm[1].labels
+            w.size_in = newm[0].size_in
+            w.size_out = newm[1].size_out
+            w.mapping_type = 'trained'
+            return w
+        else:
+            return prmapping(sequentialm,newm,x)
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'Sequentialm', x
+    elif (task=="train"):
+        # we are going to train the mapping
+        u = copy.deepcopy(w)
+        if (u[0].mapping_type=='untrained'):
+            neww = u[0].train(x)
+            u = (neww, u[1])
+        x2 = u[0](x)
+        if (u[1].mapping_type=='untrained'):
+            neww = u[1].train(x2)
+            u = (u[0],neww)
+        return u, u[1].labels
+    elif (task=="eval"):
+        # we are applying to new data
+        W = w.data   # get the parameters out
+        return W[1](W[0](x))
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for scalem.')
 
 # === useful functions =====================================
 def scatterd(a):
@@ -370,7 +368,7 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
 def scalem(task=None,x=None,w=None):
     "Scale mapping"
     if not isinstance(task,basestring):
-        out = prmapping(scalem,task)
+        out = prmapping(scalem,task,x)
         return out
     if (task=='untrained'):
         # just return the name, and hyperparameters
@@ -398,8 +396,7 @@ def proxm(task=None,x=None,w=None):
         #print("inside proxm:")
         #print(task)
         #print(x)
-        out = prmapping(proxm,task,x)  # store hyperparams
-        return out
+        return prmapping(proxm,task,x)
     if (task=='untrained'):
         # just return the name, and hyperparams
         return 'Proxm',x
