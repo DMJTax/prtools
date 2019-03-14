@@ -275,11 +275,7 @@ class prmapping(object):
             # we get a sequential mapping
             leftm = copy.deepcopy(self)
             rightm = copy.deepcopy(other)
-            out = prmapping(sequential)
-            out = out((leftm,rightm))
-            #out.mapping_type = 'untrained'
-            #if (leftm.mapping_type=='trained') and (rightm.mapping_type=='trained'):
-            #    out.mapping_type = 'trained'
+            out = prmapping(sequentialm,(leftm,rightm))
             return out
         else:
             raise ValueError('Prmapping times something not defined.')
