@@ -296,7 +296,11 @@ def sequentialm(task=None,x=None,w=None):
         if not isinstance(task[1],prmapping):
             raise ValueError('Sequential map expects a list of 2 prmappings.')
         newm = copy.deepcopy(task)
-        if (newm[0].mapping_type=='trained') and (newm[1].mapping_type=='trained'):
+        # if both mappings are trained, the sequential mapping is also trained!
+        # (this is an exception to the standard, where you need data in order to
+        # train a prmapping)
+        if (newm[0].mapping_type=='trained') and \
+                (newm[1].mapping_type=='trained'):
             # now the seq.map is already trained:
             if (newm[0].size_out != newm[1].size_in):
                 raise ValueError('Output size map1 does not match input size map2.')
@@ -393,9 +397,7 @@ def scalem(task=None,x=None,w=None):
 def proxm(task=None,x=None,w=None):
     "Proximity mapping"
     if not isinstance(task,basestring):
-        #print("inside proxm:")
-        #print(task)
-        #print(x)
+        # A direct call to proxm, refer back to prmapping:
         return prmapping(proxm,task,x)
     if (task=='untrained'):
         # just return the name, and hyperparams
