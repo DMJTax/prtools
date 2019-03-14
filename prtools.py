@@ -42,7 +42,9 @@ class prdataset(object):
             outstr = "%d by %d prdataset" % (sz[0],sz[1])
         cnt = self.classsizes()
         nrcl = len(cnt)
-        if (nrcl==1):
+        if (nrcl==0):
+            outstr += " with no labels"
+        elif (nrcl==1):
             outstr += " with 1 class: [%d]"%sz[0]
         else:
             outstr += " with %d classes: [%d"%(nrcl,cnt[0])
@@ -230,6 +232,7 @@ class prmapping(object):
             self.data,self.labels = self.mapping_func('train',x)
         else:
             self.data,self.labels = self.mapping_func('train',x,self.hyperparam)
+
         self.mapping_type = 'trained'
         # set the input and output sizes 
         if (hasattr(x,'shape')):  # combiners do not eat datasets
@@ -244,8 +247,12 @@ class prmapping(object):
         # evaluate
         if (self.mapping_type=="untrained"):
             raise ValueError('The mapping is not trained and cannot be evaluated.')
-        out = self.mapping_func("eval",+x,self) # good idea to only supply data?
-        if (out.shape[1] != len(self.labels)):
+        # not a good idea to supply the true labels:
+        x_nolab = copy.deepcopy(x)
+        x_nolab.labels = ()
+        out = self.mapping_func("eval",x_nolab,self)
+        if ((len(self.labels)>0) and (out.shape[1] != len(self.labels))):
+            print(len(self.labels))
             raise ValueError('Output of mapping does not match number of labels.')
         if isinstance(x,prdataset):
             x.data = out
@@ -385,8 +392,8 @@ def scalem(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are applying to new data
         W = w.data   # get the parameters out
-        x = x-W[0]
-        x = x/W[1]
+        x = +x-W[0]
+        x = +x/W[1]
         return x
     else:
         print(task)
@@ -469,6 +476,32 @@ def classc():
     w.mapping_type = 'trained'
     return w
 
+
+def labeld(task=None,x=None,w=None):
+    "Label mapping"
+    if not isinstance(task,basestring):
+        out = prmapping(labeld)
+        out.mapping_type = "trained"
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'Label', ()
+    elif (task=="train"):
+        print("We cannot train the label mapping.")
+        return 0, x.featlab
+    elif (task=="eval"):
+        # we are applying to new data
+        I = numpy.argmax(+x,axis=1)
+        n = x.shape(0)
+        out = numpy.zeros((n,1))
+        for i in range(n):
+            out[i] = x.featlab[I[i]]
+        return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for scalem.')
+
+
 def nmc(task=None,x=None,w=None):
     "Nearest mean classifier"
     if not isinstance(task,basestring):
@@ -479,12 +512,12 @@ def nmc(task=None,x=None,w=None):
         return 'Nearest mean', ()
     elif (task=="train"):
         # we are going to train the mapping
-        print(x.lablist())
         x0 = x.seldat(0)
         x1 = x.seldat(1)
         mn0 = numpy.mean(+x0,axis=0)
         mn1 = numpy.mean(+x1,axis=0)
         # store the parameters, and labels:
+        print(x.lablist())
         return numpy.vstack((mn0,mn1)),x.lablist()
     elif (task=="eval"):
         # we are applying to new data
