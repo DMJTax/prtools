@@ -28,9 +28,9 @@ class prdataset(object):
         else:
             labels = numpy.zeros(data.shape[0])
         self.name = ''
+        self.featlab = numpy.arange(data.shape[1])
         self.setdata(data)
         self.labels = labels
-        self.featlab = numpy.arange(data.shape[1])
         self.prior = []
         self.user = []
 
@@ -107,9 +107,11 @@ class prdataset(object):
         return lab
     def setdata(self,data):
         self.data = data
-        self.featlab = ['Feature 0']
-        for i in range(1,data.shape[1]):
-            self.featlab.append('Feature %d'%i)
+        self.shape = data.shape
+        if len(self.featlab) != data.shape[1]:
+            self.featlab = ['Feature 0']
+            for i in range(1,data.shape[1]):
+                self.featlab.append('Feature %d'%i)
         return self
 
     def classsizes(self):
@@ -130,20 +132,20 @@ class prdataset(object):
         newd.featlab = newd.featlab[key[1]]
         return newd
 
-    def shape(self,I=None):
-        [n,dim] = self.data.shape
-        nrcl = len(self.lablist())
-        if I is not None:
-            if (I==0):
-                return n
-            elif (I==1):
-                return dim
-            elif (I==2):
-                return nrcl
-            else:
-                raise ValueError('Only dim=0,1,2 are possible.')
-        else:
-            return (n,dim,nrcl)
+#    def shape(self,I=None):
+#        [n,dim] = self.data.shape
+#        nrcl = len(self.lablist())
+#        if I is not None:
+#            if (I==0):
+#                return n
+#            elif (I==1):
+#                return dim
+#            elif (I==2):
+#                return nrcl
+#            else:
+#                raise ValueError('Only dim=0,1,2 are possible.')
+#        else:
+#            return (n,dim,nrcl)
 
     def seldat(self,cl):
         newd = copy.deepcopy(self)
@@ -236,7 +238,7 @@ class prmapping(object):
         self.mapping_type = 'trained'
         # set the input and output sizes 
         if (hasattr(x,'shape')):  # combiners do not eat datasets
-            self.size_in = x.shape(1)
+            self.size_in = x.shape[1]
             # and the output size?
             xx = +x[0,:]   # hmmm??
             out = self.mapping_func("eval",xx,self)
@@ -248,17 +250,24 @@ class prmapping(object):
         if (self.mapping_type=="untrained"):
             raise ValueError('The mapping is not trained and cannot be evaluated.')
         # not a good idea to supply the true labels:
-        x_nolab = copy.deepcopy(x)
-        x_nolab.labels = ()
-        out = self.mapping_func("eval",x_nolab,self)
+        if isinstance(x,prdataset):
+            x_nolab = copy.deepcopy(x)
+            x_nolab.labels = ()
+            out = self.mapping_func("eval",x_nolab,self)
+        else:
+            out = self.mapping_func("eval",x,self)
         if ((len(self.labels)>0) and (out.shape[1] != len(self.labels))):
             print(len(self.labels))
+            print(out.shape[1])
+            print(out)
+            print(out.shape)
             raise ValueError('Output of mapping does not match number of labels.')
         #if isinstance(x,prdataset):
         if (len(self.labels)>0):  # is this better than above?
-            x.data = out
+            if not isinstance(x,prdataset):
+                x = prdataset(x)
             x.featlab = self.labels
-            x.size_out = out.shape[1]
+            x = x.setdata(out)
             return x
         else:
             return out
@@ -415,11 +424,11 @@ def proxm(task=None,x=None,w=None):
         else:
             R = numpy.copy(x)
         if (w[0]=='eucl'):
-            return ('eucl',R), numpy.arange(R.shape[1])
+            return ('eucl',R), numpy.arange(R.shape[0])
         if (w[0]=='city'):
-            return ('city',R), numpy.arange(R.shape[1])
+            return ('city',R), numpy.arange(R.shape[0])
         elif (w[0]=='rbf'):
-            return ('rbf',R,w[1]), numpy.arange(R.shape[1])
+            return ('rbf',R,w[1]), numpy.arange(R.shape[0])
         else:
             raise ValueError('Proxm type not defined')
     elif (task=="eval"):
