@@ -669,16 +669,7 @@ def testc(task=None,x=None,w=None):
         return None,()
     elif (task=="eval"):
         # we are classifying new data
-        print("Inside testc:")
-        print(x)
-        print(x.labels)
-        print(labeld())
-        pred = labeld(x)
-        #pred = labeld().eval(x)
-        print(pred)
-        l = (pred != x.labels)
-        err = numpy.mean(l)
-        return err
+        return numpy.mean(labeld(x) != x.labels)
     else:
         print(task)
         raise ValueError('This task is *not* defined for scalem.')
