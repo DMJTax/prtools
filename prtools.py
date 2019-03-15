@@ -127,25 +127,11 @@ class prdataset(object):
         if isinstance(k2,int):  # fucking python!!!!
             k2 = range(k2,k2+1)
         newkey = (k1,k2)
-        newd.data = newd.data[newkey]
+        newfeatlab = newd.featlab[key[1]]
+        newd.featlab = numpy.ndarray(newfeatlab)  # GRRR python
+        newd = newd.setdata(newd.data[newkey])
         newd.labels = newd.labels[newkey[0]]
-        newd.featlab = newd.featlab[key[1]]
         return newd
-
-#    def shape(self,I=None):
-#        [n,dim] = self.data.shape
-#        nrcl = len(self.lablist())
-#        if I is not None:
-#            if (I==0):
-#                return n
-#            elif (I==1):
-#                return dim
-#            elif (I==2):
-#                return nrcl
-#            else:
-#                raise ValueError('Only dim=0,1,2 are possible.')
-#        else:
-#            return (n,dim,nrcl)
 
     def seldat(self,cl):
         newd = copy.deepcopy(self)
@@ -161,7 +147,7 @@ class prdataset(object):
 
     def concatenate(self,other):
         out = copy.deepcopy(self)
-        out.data = numpy.concatenate((out.data,other.data),axis=0)
+        out = out.setdata(numpy.concatenate((out.data,other.data),axis=0))
         out.labels = numpy.concatenate((out.labels,other.labels),axis=0)
         return out
 
