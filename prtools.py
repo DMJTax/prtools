@@ -4,18 +4,20 @@ import copy
 import sys
 import mlearn
 
-# What does python do, if we do  A*W?
-# 1. try to use A.__mul__
-# 2. try to use W.__rmul__
-#
-# Ok, what can we expect:
-#  a*w    w untrained -> train w
-#  a*w    w trained   -> eval w
 # === prdataset ============================================
 class prdataset(object):
     "Prdataset in python"
 
     def __init__(self,data,labels=None):
+        if isinstance(data,prdataset):
+            #self = copy.deepcopy(data) # why does this not work??
+            self.name = data.name
+            self.featlab = data.featlab
+            self.setdata(data.data)
+            self.labels = data.labels
+            self.prior = data.prior
+            self.user = data.user
+            return
         if not isinstance(data,(numpy.ndarray, numpy.generic)):
             data = numpy.array(data,ndmin=2)
             if not isinstance(data,(numpy.ndarray, numpy.generic)):
@@ -128,7 +130,9 @@ class prdataset(object):
             k2 = range(k2,k2+1)
         newkey = (k1,k2)
         newfeatlab = newd.featlab[key[1]]
-        newd.featlab = numpy.ndarray(newfeatlab)  # GRRR python
+        if not isinstance(newfeatlab,numpy.ndarray):
+            newfeatlab = numpy.ndarray(newfeatlab) # GRR Python
+        newd.featlab = newfeatlab
         newd = newd.setdata(newd.data[newkey])
         newd.labels = newd.labels[newkey[0]]
         return newd
@@ -243,17 +247,13 @@ class prmapping(object):
         else:
             out = self.mapping_func("eval",x,self)
         if ((len(self.labels)>0) and (out.shape[1] != len(self.labels))):
-            print(len(self.labels))
-            print(out.shape[1])
-            print(out)
-            print(out.shape)
             raise ValueError('Output of mapping does not match number of labels.')
         #if isinstance(x,prdataset):
         if (len(self.labels)>0):  # is this better than above?
             if not isinstance(x,prdataset):
                 x = prdataset(x)
             x.featlab = self.labels
-            x = x.setdata(out)
+            x = x.setdata(+out)
             return x
         else:
             return out
@@ -488,7 +488,7 @@ def labeld(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are applying to new data
         I = numpy.argmax(+x,axis=1)
-        n = x.shape(0)
+        n = x.shape[0]
         out = numpy.zeros((n,1))
         for i in range(n):
             out[i] = x.featlab[I[i]]
