@@ -506,13 +506,31 @@ def labeld(task=None,x=None,w=None):
         return 0, x.featlab
     elif (task=="eval"):
         # we are applying to new data
-        print("Label new data")
         I = numpy.argmax(+x,axis=1)
         n = x.shape[0]
         out = numpy.zeros((n,1))
         for i in range(n):
             out[i] = x.featlab[I[i]]
         return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for scalem.')
+
+def testc(task=None,x=None,w=None):
+    "Test classifier"
+    if not isinstance(task,basestring):
+        out = prmapping(testc)
+        out.mapping_type = "trained"
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'Test classifier', ()
+    elif (task=="train"):
+        # nothing to train
+        return None,()
+    elif (task=="eval"):
+        # we are classifying new data
+        return numpy.mean(labeld(x) != x.labels)
     else:
         print(task)
         raise ValueError('This task is *not* defined for scalem.')
@@ -654,25 +672,6 @@ def gendatb(n,s=1.0):
     out.name = 'Banana dataset'
     out.prior = [0.5,0.5]
     return out
-
-def testc(task=None,x=None,w=None):
-    "Test classifier"
-    if not isinstance(task,basestring):
-        out = prmapping(testc)
-        out.mapping_type = "trained"
-        return out
-    if (task=='untrained'):
-        # just return the name, and hyperparameters
-        return 'Test classifier', ()
-    elif (task=="train"):
-        # nothing to train
-        return None,()
-    elif (task=="eval"):
-        # we are classifying new data
-        return numpy.mean(labeld(x) != x.labels)
-    else:
-        print(task)
-        raise ValueError('This task is *not* defined for scalem.')
 
 def sqeucldistm(a,b):
     n0,dim = a.shape
