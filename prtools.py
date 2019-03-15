@@ -239,13 +239,14 @@ class prmapping(object):
         # evaluate
         if (self.mapping_type=="untrained"):
             raise ValueError('The mapping is not trained and cannot be evaluated.')
-        # not a good idea to supply the true labels:
-        if isinstance(x,prdataset):
-            x_nolab = copy.deepcopy(x)
-            x_nolab.labels = ()
-            out = self.mapping_func("eval",x_nolab,self)
-        else:
-            out = self.mapping_func("eval",x,self)
+        # not a good idea to supply the true labels?
+        # but it is needed for testc!
+        #if isinstance(x,prdataset):
+        #    x_nolab = copy.deepcopy(x)
+        #    x_nolab.labels = ()
+        #    out = self.mapping_func("eval",x_nolab,self)
+        #else:
+        out = self.mapping_func("eval",x,self)
         if ((len(self.labels)>0) and (out.shape[1] != len(self.labels))):
             raise ValueError('Output of mapping does not match number of labels.')
         #if isinstance(x,prdataset):
@@ -364,8 +365,24 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
         for j in range(0,gridsize):
             # have I already told you that I hate python?
             featvec = numpy.array([x[i],y[j]],ndmin=2)
-            #z[j,i] = f(featvec)[0]
-            z[j,i] = f(featvec)
+            out = +f(featvec)
+            z[j,i] = out[0][0]
+    plt.contour(x,y,z,levels,colors=colors)
+def plotc2(f,levels=[0.0],colors=None,gridsize = 30):
+    ax = plt.gca()
+    xl = ax.get_xlim()
+    yl = ax.get_ylim()
+    dx = (xl[1]-xl[0])/(gridsize-1)
+    dy = (yl[1]-yl[0])/(gridsize-1)
+    x = numpy.arange(xl[0],xl[1]+0.01*dx,dx)
+    y = numpy.arange(yl[0],yl[1]+0.01*dy,dy)
+    X0,X1 = numpy.meshgrid(x,y)
+    X0.shape = (gridsize*gridsize, 1)
+    X1.shape = (gridsize*gridsize, 1)
+    dat = numpy.hstack((X0,X1))
+    out = +f(dat)
+    z = out[:,0]
+    z.shape = (gridsize,gridsize)
     plt.contour(x,y,z,levels,colors=colors)
 
 # === mappings ===============================
@@ -478,15 +495,18 @@ def labeld(task=None,x=None,w=None):
     if not isinstance(task,basestring):
         out = prmapping(labeld)
         out.mapping_type = "trained"
+        if task is not None:
+            out = out(task)
         return out
     if (task=='untrained'):
         # just return the name, and hyperparameters
-        return 'Label', ()
+        return 'Labeld', ()
     elif (task=="train"):
-        print("We cannot train the label mapping.")
+        print("Labeld: We cannot train the label mapping.")
         return 0, x.featlab
     elif (task=="eval"):
         # we are applying to new data
+        print("Label new data")
         I = numpy.argmax(+x,axis=1)
         n = x.shape[0]
         out = numpy.zeros((n,1))
@@ -635,25 +655,33 @@ def gendatb(n,s=1.0):
     out.prior = [0.5,0.5]
     return out
 
-def classificationerror(f,a=None):
-    "Test map"
-    if isinstance(f,basestring):
-        if (f=='untrained'):
-            # just return the name
-            return 'Testc'
-        else:
-            # nothing to train
-            return None
-    else:
+def testc(task=None,x=None,w=None):
+    "Test classifier"
+    if not isinstance(task,basestring):
+        out = prmapping(testc)
+        out.mapping_type = "trained"
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'Test classifier', ()
+    elif (task=="train"):
+        # nothing to train
+        return None,()
+    elif (task=="eval"):
         # we are classifying new data
-        pred = +a[:,0]  # this is sooo ugly
-        l = mlearn.loss_01(pred,a.signlab())[0]  # but it can be worse
+        print("Inside testc:")
+        print(x)
+        print(x.labels)
+        print(labeld())
+        pred = labeld(x)
+        #pred = labeld().eval(x)
+        print(pred)
+        l = (pred != x.labels)
         err = numpy.mean(l)
         return err
-def testc():
-    out = prmapping(classificationerror)
-    out.mapping_type = 'trained'
-    return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for scalem.')
 
 def sqeucldistm(a,b):
     n0,dim = a.shape
