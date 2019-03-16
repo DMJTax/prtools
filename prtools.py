@@ -320,11 +320,12 @@ def sequentialm(task=None,x=None,w=None):
         return 'Sequentialm', x
     elif (task=="train"):
         # we are going to train the mapping
-        u = copy.deepcopy(w)
+        u = copy.deepcopy(w)  # I hate Python..
+        x1 = copy.deepcopy(x) # Did I say that I hate Python??
         if (u[0].mapping_type=='untrained'):
-            neww = u[0].train(x)
+            neww = u[0].train(x1)
             u = (neww, u[1])
-        x2 = u[0](x)
+        x2 = u[0](x1)
         if (u[1].mapping_type=='untrained'):
             neww = u[1].train(x2)
             u = (u[0],neww)
