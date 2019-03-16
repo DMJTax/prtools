@@ -193,8 +193,6 @@ class prmapping(object):
             raise ValueError('Mapping type is not defined.')
         return outstr
 
-    def __shape__(self):
-        return
     def shape(self,I=None):
         if I is not None:
             if (I==0):
