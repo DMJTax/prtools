@@ -119,6 +119,9 @@ class prdataset(object):
     def classsizes(self):
         (k,count) = numpy.unique(self.labels,return_counts=True)
         return count
+    def nrclasses(self):
+        (k,count) = numpy.unique(self.labels,return_counts=True)
+        return len(count)
 
     def __getitem__(self,key):
         newd = copy.deepcopy(self)
@@ -545,12 +548,14 @@ def nmc(task=None,x=None,w=None):
         return 'Nearest mean', ()
     elif (task=="train"):
         # we are going to train the mapping
-        x0 = x.seldat(0)
-        x1 = x.seldat(1)
-        mn0 = numpy.mean(+x0,axis=0)
-        mn1 = numpy.mean(+x1,axis=0)
+        xi = x.seldat(0)
+        mn = numpy.mean(+xi,axis=0)
+        for i in range(1,x.nrclasses()):
+            xi = x.seldat(i)
+            mn = numpy.vstack(mn, numpy.mean(+xi,axis=0))
         # store the parameters, and labels:
-        return numpy.vstack((mn0,mn1)),x.lablist()
+        print(nm)
+        return mn,x.lablist()
     elif (task=="eval"):
         # we are applying to new data
         W = w.data
