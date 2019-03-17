@@ -472,21 +472,29 @@ def proxm(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for proxm.')
 
 
-def softmax(w,x=None):
-    "Softmax function"
-    if isinstance(w,basestring):
-        if (w=='untrained'):
-            # just return the name
-            return 'Classc'
-        else:
-            # we are going to train the mapping
-            # nothing here
-            return 1.
-    else:
-        # we are applying to new data
-        out = 1./(1.+numpy.exp(-x))
-        #DXD: also for more than 1D output?!
+def softmax(task=None,x=None,w=None):
+    "Softmax mapping"
+    if not isinstance(task,basestring):
+        out = prmapping(softmax)
+        out.mapping_type = "trained"
+        if task is not None:
+            out = out(task)
         return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'Softmax', ()
+    elif (task=="train"):
+        print("Softmax: We cannot train the softmax mapping.")
+        return 0, x.featlab
+    elif (task=="eval"):
+        # we are applying to new data
+        sumx = numpy.sum(numpy.exp(+x),axis=1)
+        sumx = sumx[:,numpy.newaxis]
+        x.setdata( +x/sumx )
+        return x
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for softmax.')
 
 def classc(task=None,x=None,w=None):
     "Classc mapping"
@@ -508,12 +516,11 @@ def classc(task=None,x=None,w=None):
             print('classc(): Suspicious negative values in Classc.')
         sumx = numpy.sum(+x,axis=1)
         sumx = sumx[:,numpy.newaxis]
-        dat = +x/sumx
-        x.setdata(dat)
+        x.setdata( +x/sumx )
         return x
     else:
         print(task)
-        raise ValueError('This task is *not* defined for scalem.')
+        raise ValueError('This task is *not* defined for classc.')
 
 
 def labeld(task=None,x=None,w=None):
@@ -540,7 +547,7 @@ def labeld(task=None,x=None,w=None):
         return out
     else:
         print(task)
-        raise ValueError('This task is *not* defined for scalem.')
+        raise ValueError('This task is *not* defined for labeld.')
 
 def testc(task=None,x=None,w=None):
     "Test classifier"
@@ -559,7 +566,7 @@ def testc(task=None,x=None,w=None):
         return numpy.mean(labeld(x) != x.labels)
     else:
         print(task)
-        raise ValueError('This task is *not* defined for scalem.')
+        raise ValueError('This task is *not* defined for testc.')
 
 
 def nmc(task=None,x=None,w=None):
@@ -586,7 +593,7 @@ def nmc(task=None,x=None,w=None):
         return -out
     else:
         print(task)
-        raise ValueError('This task is *not* defined for scalem.')
+        raise ValueError('This task is *not* defined for nmc.')
 
 def ldc(task=None,x=None,w=None):
     "Nearest mean classifier"
@@ -628,7 +635,7 @@ def ldc(task=None,x=None,w=None):
         return numpy.exp(-out/2)/W[3]
     else:
         print(task)
-        raise ValueError('This task is *not* defined for scalem.')
+        raise ValueError('This task is *not* defined for ldc.')
 
 def qdc(task=None,x=None,w=None):
     "Quadratic discriminant classifier"
@@ -671,7 +678,7 @@ def qdc(task=None,x=None,w=None):
         return out
     else:
         print(task)
-        raise ValueError('This task is *not* defined for scalem.')
+        raise ValueError('This task is *not* defined for qdc.')
 
 def knnc(task=None,x=None,w=None):
     "k-Nearest neighbor classifier"
@@ -704,7 +711,7 @@ def knnc(task=None,x=None,w=None):
         return out
     else:
         print(task)
-        raise ValueError('This task is *not* defined for scalem.')
+        raise ValueError('This task is *not* defined for knnc.')
 
 
 # === datasets ===============================
