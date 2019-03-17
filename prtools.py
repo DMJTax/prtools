@@ -488,9 +488,10 @@ def softmax(task=None,x=None,w=None):
         return 0, x.featlab
     elif (task=="eval"):
         # we are applying to new data
-        sumx = numpy.sum(numpy.exp(+x),axis=1)
+        dat = numpy.exp(+x)
+        sumx = numpy.sum(dat,axis=1)
         sumx = sumx[:,numpy.newaxis]
-        x.setdata( +x/sumx )
+        x.setdata( dat/sumx )
         return x
     else:
         print(task)
