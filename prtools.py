@@ -179,8 +179,6 @@ class prmapping(object):
         self.user = []
         if isinstance(x,prdataset):
             self = self.train(x)
-        #print(self.mapping_type)
-
 
     def __repr__(self):
         return "prmapping("+self.mapping_func.func_name+","+self.mapping_type+")"
@@ -490,10 +488,32 @@ def softmax(w,x=None):
         #DXD: also for more than 1D output?!
         return out
 
-def classc():
-    w = prmapping(softmax)
-    w.mapping_type = 'trained'
-    return w
+def classc(task=None,x=None,w=None):
+    "Classc mapping"
+    if not isinstance(task,basestring):
+        out = prmapping(classc)
+        out.mapping_type = "trained"
+        if task is not None:
+            out = out(task)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'Classc', ()
+    elif (task=="train"):
+        print("Classc: We cannot train the classc mapping.")
+        return 0, x.featlab
+    elif (task=="eval"):
+        # we are applying to new data
+        if (numpy.any(+x<0.)):
+            print('classc(): Suspicious negative values in Classc.')
+        sumx = numpy.sum(+x,axis=1)
+        sumx = sumx[:,numpy.newaxis]
+        dat = +x/sumx
+        x.setdata(dat)
+        return x
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for scalem.')
 
 
 def labeld(task=None,x=None,w=None):
