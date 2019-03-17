@@ -348,8 +348,8 @@ def scatterd(a):
         plt.scatter(a.data[:,0],numpy.zeros((sz[0],1)),c=clrs)
         ylab = ''
     plt.title(a.name)
-    plt.xlabel(a.featlab[0])
-    plt.ylabel(ylab)
+    plt.xlabel('Feature '+str(a.featlab[0]))
+    plt.ylabel('Feature '+str(ylab))
     plt.winter()
 
 def plotc(f,levels=[0.0],colors=None,gridsize = 30):
