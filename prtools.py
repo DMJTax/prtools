@@ -162,7 +162,7 @@ class prdataset(object):
 
 # === prmapping ============================================
 class prmapping(object):
-    "Prmapping in python"
+    "Prmapping in Python"
 
     def __init__(self,mapping_func,x=[],hyperp=[]):
         # exception: when only hyperp are given
@@ -174,8 +174,7 @@ class prmapping(object):
         self.name, self.hyperparam = self.mapping_func("untrained",hyperp)
         self.data = () 
         self.labels = ()
-        self.size_in = 0
-        self.size_out = 0
+        self.shape = [0,0]
         self.user = []
         if isinstance(x,prdataset):
             self = self.train(x)
@@ -189,7 +188,7 @@ class prmapping(object):
         if (self.mapping_type=="untrained"):
             outstr += "untrained mapping"
         elif (self.mapping_type=="trained"):
-            outstr += "%d to %d trained mapping" % (self.size_in,self.size_out)
+            outstr += "%d to %d trained mapping" % (self.shape[0],self.shape[1])
         else:
             raise ValueError('Mapping type is not defined.')
         return outstr
@@ -197,13 +196,13 @@ class prmapping(object):
     def shape(self,I=None):
         if I is not None:
             if (I==0):
-                return self.size_in
+                return self.shape[0]
             elif (dim==1):
-                return self.size_out
+                return self.shape[1]
             else:
                 raise ValueError('Only dim=0,1 are possible.')
         else:
-            return (self.size_in,self.size_out)
+            return self.shape
 
     def init(self,mappingfunc,**kwargs):
         self.mapping_func = mappingfunc
@@ -227,11 +226,11 @@ class prmapping(object):
         self.mapping_type = 'trained'
         # set the input and output sizes 
         if (hasattr(x,'shape')):  # combiners do not eat datasets
-            self.size_in = x.shape[1]
+            self.shape[0] = x.shape[1]
             # and the output size?
             xx = +x[0,:]   # hmmm??
             out = self.mapping_func("eval",xx,self)
-            self.size_out = out.shape[1]
+            self.shape[1] = out.shape[1]
         return self
 
     def eval(self,x):
@@ -303,13 +302,13 @@ def sequentialm(task=None,x=None,w=None):
         if (newm[0].mapping_type=='trained') and \
                 (newm[1].mapping_type=='trained'):
             # now the seq.map is already trained:
-            if (newm[0].size_out != newm[1].size_in):
+            if (newm[0].shape[1] != newm[1].shape[0]):
                 raise ValueError('Output size map1 does not match input size map2.')
             w = prmapping(sequentialm)
             w.data = newm
             w.labels = newm[1].labels
-            w.size_in = newm[0].size_in
-            w.size_out = newm[1].size_out
+            w.shape[0] = newm[0].shape[0]
+            w.shape[1] = newm[1].shape[1]
             w.mapping_type = 'trained'
             return w
         else:
@@ -890,8 +889,8 @@ def m2p(f,*args):
         newm = prmapping(m2p)
         newm.data = (f,args) # a bit ugly, but needed
         newm.name += f.name
-        newm.size_in = f.dim
-        newm.size_out = 1
+        newm.shape[0] = f.dim
+        newm.shape[1] = 1
         newm.mapping_type = 'trained'
         return newm
     else:
