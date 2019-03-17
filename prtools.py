@@ -549,6 +549,44 @@ def nmc(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for scalem.')
 
+def ldc(task=None,x=None,w=None):
+    "Nearest mean classifier"
+    if not isinstance(task,basestring):
+        out = prmapping(ldc,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'LDA', ()
+    elif (task=="train"):
+        # we are going to train the mapping
+        c = x.nrclasses()
+        dim = x.shape[1]
+        prior = x.getprior()
+        mn = numpy.zeros((c,dim))
+        cv = numpy.zeros((dim,dim))
+        for i in range(c):
+            xi = x.seldat(i)
+            mn[i,:] = numpy.mean(+xi,axis=0)
+            cv += prior[i]*numpy.cov(+xi,rowvar=False)
+        icov = numpy.linalg.inv(cv)
+        # normalisation is not that necessary here, but well..:
+        Z = numpy.sqrt(numpy.linalg.det(cv)*(2*numpy.pi)**dim)
+        # store the parameters, and labels:
+        return (prior,mn,icov,Z),x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        W = w.data
+        c = len(W[0])
+        X = +x
+        out = numpy.zeros((X.shape[0],c))
+        for i in range(c):
+            df = X - W[1][i,:]
+            out[:,i] = W[0][i] * numpy.sum(numpy.dot(df,W[2])*df,axis=1)
+        return numpy.exp(-out/2)/W[3]
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for scalem.')
+
 
 # === datasets ===============================
 def genclass(n,p):
