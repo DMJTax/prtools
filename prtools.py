@@ -379,8 +379,7 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
 def scalem(task=None,x=None,w=None):
     "Scale mapping"
     if not isinstance(task,basestring):
-        out = prmapping(scalem,task,x)
-        return out
+        return prmapping(scalem,task,x)
     if (task=='untrained'):
         # just return the name, and hyperparameters
         return 'Scalem', ()
@@ -389,7 +388,6 @@ def scalem(task=None,x=None,w=None):
         mn = numpy.mean(+x,axis=0)
         sc = numpy.std(+x,axis=0)
         # return the parameters, and feature labels
-        labels = x.featlab
         return (mn,sc), x.featlab
     elif (task=="eval"):
         # we are applying to new data
