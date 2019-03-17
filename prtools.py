@@ -367,7 +367,7 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
     X1.shape = (gridsize*gridsize, 1)
     dat = numpy.hstack((X0,X1))
     out = +f(dat)
-    for i in range(out.shape[1]):
+    for i in range(1,out.shape[1]):
         otherout = copy.deepcopy(out)
         otherout[:,i] = -numpy.inf
         z = out[:,i] - numpy.amax(otherout,axis=1)
@@ -621,6 +621,39 @@ def qdc(task=None,x=None,w=None):
             df = X - W[1][i,:]
             out[:,i] = W[0][i] * numpy.sum(numpy.dot(df,W[2][i,:,:])*df,axis=1)
             out[:,i] = numpy.exp(-out[:,i]/2)/W[3][i]
+        return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for scalem.')
+
+def knnc(task=None,x=None,w=None):
+    "k-Nearest neighbor classifier"
+    if not isinstance(task,basestring):
+        out = prmapping(knnc,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = [1]
+        return 'k-Nearest neighbor', x
+    elif (task=="train"):
+        # we only need to store the data
+        # store the parameters, and labels:
+        return x,x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        W = w.data
+        nrcl = len(w.labels)
+        k = w.hyperparam[0]
+        n = x.shape[0]
+        lab = W.nlab()
+        out = numpy.zeros((n,nrcl))
+        D = sqeucldist(+x,+W)
+        I = numpy.argsort(D,axis=1)
+        for i in range(n):
+            thislab = lab[I[i,0:k]]
+            thislab.shape = (1,k)
+            out[i,:] = numpy.bincount(thislab[0],minlength=nrcl)/k
         return out
     else:
         print(task)
