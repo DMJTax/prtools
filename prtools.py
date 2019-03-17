@@ -374,6 +374,25 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
         z.shape = (gridsize,gridsize)
         plt.contour(x,y,z,levels,colors=colors)
 
+def plotm(f,nrlevels=10,colors=None,gridsize = 30):
+    ax = plt.gca()
+    xl = ax.get_xlim()
+    yl = ax.get_ylim()
+    dx = (xl[1]-xl[0])/(gridsize-1)
+    dy = (yl[1]-yl[0])/(gridsize-1)
+    x = numpy.arange(xl[0],xl[1]+0.01*dx,dx)
+    y = numpy.arange(yl[0],yl[1]+0.01*dy,dy)
+    X0,X1 = numpy.meshgrid(x,y)
+    X0.shape = (gridsize*gridsize, 1)
+    X1.shape = (gridsize*gridsize, 1)
+    dat = numpy.hstack((X0,X1))
+    out = +f(dat)
+    for i in range(out.shape[1]):
+        z = out[:,i]
+        levels = numpy.linspace(numpy.min(z),numpy.max(z),nrlevels)
+        z.shape = (gridsize,gridsize)
+        plt.contour(x,y,z,levels,colors=colors)
+
 # === mappings ===============================
 
 def scalem(task=None,x=None,w=None):
