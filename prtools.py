@@ -543,7 +543,7 @@ def nmc(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are applying to new data
         W = w.data
-        out = sqeucldistm(+x,W)
+        out = sqeucldist(+x,W)
         return -out
     else:
         print(task)
@@ -750,7 +750,8 @@ def gendats3(n,dim=2,delta=2.):
     out.name = 'Simple dataset'
     out.prior = [1./3,1./3,1./3]
     return out
-def sqeucldistm(a,b):
+
+def sqeucldist(a,b):
     n0,dim = a.shape
     n1,dim1 = b.shape
     if (dim!=dim1):
