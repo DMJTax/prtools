@@ -556,7 +556,9 @@ def ldc(task=None,x=None,w=None):
         return out
     if (task=='untrained'):
         # just return the name, and hyperparameters
-        return 'LDA', ()
+        if x is None:
+            x = [0.]
+        return 'LDA', x
     elif (task=="train"):
         # we are going to train the mapping
         c = x.nrclasses()
@@ -568,6 +570,8 @@ def ldc(task=None,x=None,w=None):
             xi = x.seldat(i)
             mn[i,:] = numpy.mean(+xi,axis=0)
             cv += prior[i]*numpy.cov(+xi,rowvar=False)
+        # regularise
+        cv += w*numpy.eye(dim)
         icov = numpy.linalg.inv(cv)
         # normalisation is not that necessary here, but well..:
         Z = numpy.sqrt(numpy.linalg.det(cv)*(2*numpy.pi)**dim)
@@ -594,6 +598,8 @@ def qdc(task=None,x=None,w=None):
         return out
     if (task=='untrained'):
         # just return the name, and hyperparameters
+        if x is None:
+            x = [0.]
         return 'QDA', x
     elif (task=="train"):
         # we are going to train the mapping
