@@ -594,7 +594,7 @@ def qdc(task=None,x=None,w=None):
         return out
     if (task=='untrained'):
         # just return the name, and hyperparameters
-        return 'QDA', ()
+        return 'QDA', x
     elif (task=="train"):
         # we are going to train the mapping
         c = x.nrclasses()
@@ -607,6 +607,8 @@ def qdc(task=None,x=None,w=None):
             xi = x.seldat(i)
             mn[i,:] = numpy.mean(+xi,axis=0)
             cv = numpy.cov(+xi,rowvar=False)
+            # regularise
+            cv += w*numpy.eye(dim)
             icov[i,:,:] = numpy.linalg.inv(cv)
             Z[i] = numpy.sqrt(numpy.linalg.det(cv)*(2*numpy.pi)**dim)
         # store the parameters, and labels:
@@ -690,8 +692,8 @@ def genlab(n,lab):
         out=numpy.concatenate((out,numpy.tile(lab[i],[n[i],1])))
     return out
 
-def gendat(x,n):
-    nrcl = x.shape(2)
+def gendat(x,n,seed=None):
+    nrcl = x.nrclasses()
     clsz = x.classsizes()
     prior = x.getprior()
     # and all the casting:
@@ -703,6 +705,8 @@ def gendat(x,n):
         n = list(n)
     if isinstance(n[0],float) and (n[0]<1.): # a vector/list of fractions
         n = n*clsz
+    # take care for the seed:
+    numpy.random.seed(seed)
     # now generate the data:
     i=0  # first class is special:
     x1 = x.seldat(i)
@@ -736,6 +740,31 @@ def gendat(x,n):
 
     return out,leftout
 
+def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=1):
+    nrcl = a.nrclasses()
+    clsz = a.classsizes()
+    if (numpy.max(trainsize)>=numpy.min(clsz)):
+        raise ValueError('Not enough objects per class available.')
+    N = len(trainsize)
+    err = numpy.zeros((N,nrreps))
+    err_app = numpy.zeros((N,nrreps))
+    for f in range(nrreps):
+        for i in range(N):
+            sz = trainsize[i]*numpy.ones((1,nrcl))
+            x,z = gendat(a, sz[0],seed=f)
+            w = x*u
+            err[i,f] = z*w*testc()
+            err_app[i,f] = x*w*testc()
+    # show it?
+    h = plt.errorbar(trainsize,numpy.mean(err,axis=1),numpy.std(err,axis=1),\
+            label=u.name)
+    thiscolor = h[0].get_color()
+    plt.errorbar(trainsize,numpy.mean(err_app,axis=1),numpy.std(err_app,axis=1),\
+            fmt='--',color=thiscolor)
+    plt.xlabel('Nr. train objects per class')
+    plt.ylabel('Error')
+    plt.title('Learning curve %s' % a.name)
+    return err, err_app
 
 def gendats(n,dim=2,delta=2.):
     N = genclass(n,[0.5,0.5])
