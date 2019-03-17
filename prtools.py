@@ -120,8 +120,8 @@ class prdataset(object):
         (k,count) = numpy.unique(self.labels,return_counts=True)
         return count
     def nrclasses(self):
-        (k,count) = numpy.unique(self.labels,return_counts=True)
-        return len(count)
+        ll = numpy.unique(self.labels)
+        return len(ll)
 
     def __getitem__(self,key):
         newd = copy.deepcopy(self)
@@ -362,30 +362,17 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
     dy = (yl[1]-yl[0])/(gridsize-1)
     x = numpy.arange(xl[0],xl[1]+0.01*dx,dx)
     y = numpy.arange(yl[0],yl[1]+0.01*dy,dy)
-    z = numpy.zeros((gridsize,gridsize))
-    for i in range(0,gridsize):
-        for j in range(0,gridsize):
-            # have I already told you that I hate python?
-            featvec = numpy.array([x[i],y[j]],ndmin=2)
-            out = +f(featvec)
-            z[j,i] = out[0][0]
-    plt.contour(x,y,z,levels,colors=colors)
-def plotc2(f,levels=[0.0],colors=None,gridsize = 30):
-    ax = plt.gca()
-    xl = ax.get_xlim()
-    yl = ax.get_ylim()
-    dx = (xl[1]-xl[0])/(gridsize-1)
-    dy = (yl[1]-yl[0])/(gridsize-1)
-    x = numpy.arange(xl[0],xl[1]+0.01*dx,dx)
-    y = numpy.arange(yl[0],yl[1]+0.01*dy,dy)
     X0,X1 = numpy.meshgrid(x,y)
     X0.shape = (gridsize*gridsize, 1)
     X1.shape = (gridsize*gridsize, 1)
     dat = numpy.hstack((X0,X1))
     out = +f(dat)
-    z = out[:,0]
-    z.shape = (gridsize,gridsize)
-    plt.contour(x,y,z,levels,colors=colors)
+    for i in range(out.shape[1]):
+        otherout = copy.deepcopy(out)
+        otherout[:,i] = -numpy.inf
+        z = out[:,i] - numpy.amax(otherout,axis=1)
+        z.shape = (gridsize,gridsize)
+        plt.contour(x,y,z,levels,colors=colors)
 
 # === mappings ===============================
 
@@ -548,21 +535,18 @@ def nmc(task=None,x=None,w=None):
         return 'Nearest mean', ()
     elif (task=="train"):
         # we are going to train the mapping
-        xi = x.seldat(0)
-        mn = numpy.mean(+xi,axis=0)
-        for i in range(1,x.nrclasses()):
+        c = x.nrclasses()
+        mn = numpy.zeros((c,x.shape[1]))
+        for i in range(c):
             xi = x.seldat(i)
-            mn = numpy.vstack(mn, numpy.mean(+xi,axis=0))
+            mn[i,:] = numpy.mean(+xi,axis=0)
         # store the parameters, and labels:
-        print(nm)
         return mn,x.lablist()
     elif (task=="eval"):
         # we are applying to new data
         W = w.data
         out = sqeucldistm(+x,W)
-        df = out[:,1] - out[:,0]
-        df = df[:,numpy.newaxis]  # python is soooo stupid
-        return numpy.hstack((df,-df))
+        return -out
     else:
         print(task)
         raise ValueError('This task is *not* defined for scalem.')
@@ -677,6 +661,20 @@ def gendatb(n,s=1.0):
     out.prior = [0.5,0.5]
     return out
 
+def gendats3(n,dim=2,delta=2.):
+    N = genclass(n,[1./3,1./3,1./3])
+    x0 = numpy.random.randn(N[0],dim)
+    x1 = numpy.random.randn(N[1],dim)
+    x2 = numpy.random.randn(N[2],dim)
+    x0[:,0] -= delta
+    x1[:,0] += delta
+    x2[:,1] += delta
+    x = numpy.concatenate((x0,x1,x2),axis=0)
+    y = genlab(N,(1,2,3))
+    out = prdataset(x,y)
+    out.name = 'Simple dataset'
+    out.prior = [1./3,1./3,1./3]
+    return out
 def sqeucldistm(a,b):
     n0,dim = a.shape
     n1,dim1 = b.shape
