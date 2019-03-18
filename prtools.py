@@ -318,7 +318,11 @@ def sequentialm(task=None,x=None,w=None):
             return w
     if (task=='untrained'):
         # just return the name, and hyperparameters
-        return 'Sequentialm', x
+        if x is None:
+            mapname = 'Sequential'
+        else:
+            mapname = x[0].name+'+'+x[1].name
+        return mapname, x
     elif (task=="train"):
         # we are going to train the mapping
         u = copy.deepcopy(w)  # I hate Python..
