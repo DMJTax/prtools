@@ -208,7 +208,7 @@ class prmapping(object):
         self.mapping_func = mappingfunc
         self.mapping_type = "untrained"
         self.hyperparam = kwargs
-        self = self.mapping_func('init',kwargs)
+        self.name,self.hyperparam = self.mapping_func('untrained',kwargs)
         return self
 
     def train(self,x,args=None):
@@ -310,9 +310,12 @@ def sequentialm(task=None,x=None,w=None):
             w.shape[0] = newm[0].shape[0]
             w.shape[1] = newm[1].shape[1]
             w.mapping_type = 'trained'
+            w.name = newm[0].name+'+'+newm[1].name
             return w
         else:
-            return prmapping(sequentialm,newm,x)
+            w = prmapping(sequentialm,newm,x)
+            w.name = newm[0].name+'+'+newm[1].name
+            return w
     if (task=='untrained'):
         # just return the name, and hyperparameters
         return 'Sequentialm', x
