@@ -606,6 +606,67 @@ def bayesrule(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for testc.')
 
+def gaussm(task=None,x=None,w=None):
+    "Gaussian density"
+    if not isinstance(task,basestring):
+        out = prmapping(gaussm,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = ('full',[0.])
+        return 'Gaussian density', x
+    elif (task=="train"):
+        # we are going to train the mapping
+        c = x.nrclasses()
+        dim = x.shape[1]
+        prior = x.getprior()
+        mn = numpy.zeros((c,dim))
+        cv = numpy.zeros((c,dim,dim))
+        icov = numpy.zeros((c,dim,dim))
+        Z = numpy.zeros((c,1))
+        for i in range(c):
+            xi = x.seldat(i)
+            mn[i,:] = numpy.mean(+xi,axis=0)
+            cv[i,:,:] = numpy.cov(+xi,rowvar=False)
+        # depending of the type, we have to treat the cov's:
+        if (w[0]=='full'):
+            for i in range(c):
+                # regularise
+                cv[i,:,:] += w[1]*numpy.eye(dim)
+                icov[i,:,:] = numpy.linalg.inv(cv[i,:,:])
+                Z[i] = numpy.sqrt(numpy.linalg.det(cv[i,:,:])*(2*numpy.pi)**dim)
+        elif (w[0]=='meancov'):
+            meancov = numpy.mean(cv,axis=0) + w[1]*numpy.eye(dim)
+            meanZ = numpy.sqrt(numpy.linalg.det(meancov)*(2*numpy.pi)**dim)
+            meanicov = numpy.linalg.inv(meancov)
+            for i in range(c):
+                icov[i,:,:] = meanicov
+                Z[i] = meanZ
+        else:
+            raise ValueError('This cov.mat is *not* defined for gaussm.')
+        # store the parameters, and labels:
+        return (prior,mn,icov,Z),x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        W = w.data
+        c = len(W[0])
+        X = +x
+        out = numpy.zeros((X.shape[0],c))
+        for i in range(c):
+            df = X - W[1][i,:]
+            out[:,i] = W[0][i] * numpy.sum(numpy.dot(df,W[2][i,:,:])*df,axis=1)
+            out[:,i] = numpy.exp(-out[:,i]/2)/W[3][i]
+        return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for qdc.')
+
+def ldc(task=None,x=None,w=None):
+    return gaussm(task,('meancov',x),w)*bayesrule()
+
+def qdc(task=None,x=None,w=None):
+    return gaussm(task,('full',x),w)*bayesrule()
 
 def nmc(task=None,x=None,w=None):
     "Nearest mean classifier"
@@ -632,91 +693,6 @@ def nmc(task=None,x=None,w=None):
     else:
         print(task)
         raise ValueError('This task is *not* defined for nmc.')
-
-def ldc(task=None,x=None,w=None):
-    "Nearest mean classifier"
-    if not isinstance(task,basestring):
-        out = prmapping(ldc,task,x)
-        return out
-    if (task=='untrained'):
-        # just return the name, and hyperparameters
-        if x is None:
-            x = [0.]
-        return 'LDA', x
-    elif (task=="train"):
-        # we are going to train the mapping
-        c = x.nrclasses()
-        dim = x.shape[1]
-        prior = x.getprior()
-        mn = numpy.zeros((c,dim))
-        cv = numpy.zeros((dim,dim))
-        for i in range(c):
-            xi = x.seldat(i)
-            mn[i,:] = numpy.mean(+xi,axis=0)
-            cv += prior[i]*numpy.cov(+xi,rowvar=False)
-        # regularise
-        cv += w*numpy.eye(dim)
-        icov = numpy.linalg.inv(cv)
-        # normalisation is not that necessary here, but well..:
-        Z = numpy.sqrt(numpy.linalg.det(cv)*(2*numpy.pi)**dim)
-        # store the parameters, and labels:
-        return (prior,mn,icov,Z),x.lablist()
-    elif (task=="eval"):
-        # we are applying to new data
-        W = w.data
-        c = len(W[0])
-        X = +x
-        out = numpy.zeros((X.shape[0],c))
-        for i in range(c):
-            df = X - W[1][i,:]
-            out[:,i] = W[0][i] * numpy.sum(numpy.dot(df,W[2])*df,axis=1)
-        return numpy.exp(-out/2)/W[3]
-    else:
-        print(task)
-        raise ValueError('This task is *not* defined for ldc.')
-
-def qdc(task=None,x=None,w=None):
-    "Quadratic discriminant classifier"
-    if not isinstance(task,basestring):
-        out = prmapping(qdc,task,x)
-        return out
-    if (task=='untrained'):
-        # just return the name, and hyperparameters
-        if x is None:
-            x = [0.]
-        return 'QDA', x
-    elif (task=="train"):
-        # we are going to train the mapping
-        c = x.nrclasses()
-        dim = x.shape[1]
-        prior = x.getprior()
-        mn = numpy.zeros((c,dim))
-        icov = numpy.zeros((c,dim,dim))
-        Z = numpy.zeros((c,1))
-        for i in range(c):
-            xi = x.seldat(i)
-            mn[i,:] = numpy.mean(+xi,axis=0)
-            cv = numpy.cov(+xi,rowvar=False)
-            # regularise
-            cv += w*numpy.eye(dim)
-            icov[i,:,:] = numpy.linalg.inv(cv)
-            Z[i] = numpy.sqrt(numpy.linalg.det(cv)*(2*numpy.pi)**dim)
-        # store the parameters, and labels:
-        return (prior,mn,icov,Z),x.lablist()
-    elif (task=="eval"):
-        # we are applying to new data
-        W = w.data
-        c = len(W[0])
-        X = +x
-        out = numpy.zeros((X.shape[0],c))
-        for i in range(c):
-            df = X - W[1][i,:]
-            out[:,i] = W[0][i] * numpy.sum(numpy.dot(df,W[2][i,:,:])*df,axis=1)
-            out[:,i] = numpy.exp(-out[:,i]/2)/W[3][i]
-        return out
-    else:
-        print(task)
-        raise ValueError('This task is *not* defined for qdc.')
 
 def knnm(task=None,x=None,w=None):
     "k-Nearest neighbor classifier"
