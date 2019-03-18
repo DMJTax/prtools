@@ -313,7 +313,11 @@ def sequentialm(task=None,x=None,w=None):
             w.name = newm[0].name+'+'+newm[1].name
             return w
         else:
-            w = prmapping(sequentialm,newm,x)
+            if x is None:
+                w = prmapping(sequentialm,newm,x)
+            else:
+                newx = copy.deepcopy(x)
+                w = prmapping(sequentialm,newm,newx)
             w.name = newm[0].name+'+'+newm[1].name
             return w
     if (task=='untrained'):
@@ -330,7 +334,8 @@ def sequentialm(task=None,x=None,w=None):
         if (u[0].mapping_type=='untrained'):
             neww = u[0].train(x1)
             u = (neww, u[1])
-        x2 = u[0](x1)
+        newx = copy.deepcopy(x1)
+        x2 = u[0](newx)
         if (u[1].mapping_type=='untrained'):
             neww = u[1].train(x2)
             u = (u[0],neww)
@@ -575,6 +580,32 @@ def testc(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for testc.')
 
+def bayesrule(task=None,x=None,w=None):
+    "Bayesrule"
+    if not isinstance(task,basestring):
+        out = prmapping(bayesrule)
+        out.mapping_type = "trained"
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'Bayes rule', ()
+    elif (task=="train"):
+        # nothing to train
+        return None,()
+    elif (task=="eval"):
+        # we are classifying new data
+        if (len(x.prior)>0):
+            dat = x.data*x.prior
+        else:
+            dat = x.data
+        Z = numpy.sum(dat,axis=1)
+        out = dat/Z[:,numpy.newaxis]
+        x = x.setdata(out)
+        return x
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for testc.')
+
 
 def nmc(task=None,x=None,w=None):
     "Nearest mean classifier"
@@ -687,7 +718,7 @@ def qdc(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for qdc.')
 
-def knnc(task=None,x=None,w=None):
+def knnm(task=None,x=None,w=None):
     "k-Nearest neighbor classifier"
     if not isinstance(task,basestring):
         out = prmapping(knnc,task,x)
@@ -720,6 +751,9 @@ def knnc(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for knnc.')
 
+def knnc(task=None,x=None,w=None):
+    return knnm(task,x,w)*bayesrule()
+
 def parzenm(task=None,x=None,w=None):
     "Parzen density estimate per class"
     if not isinstance(task,basestring):
@@ -751,6 +785,10 @@ def parzenm(task=None,x=None,w=None):
     else:
         print(task)
         raise ValueError('This task is *not* defined for parzenm.')
+
+def parzenc(task=None,x=None,w=None):
+    return parzenm(task,x,w)*bayesrule()
+
 
 # === datasets ===============================
 def genclass(n,p):
