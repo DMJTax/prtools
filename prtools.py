@@ -875,7 +875,8 @@ def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=1):
     return err, err_app
 
 def gendats(n,dim=2,delta=2.):
-    N = genclass(n,[0.5,0.5])
+    prior = [0.5,0.5]
+    N = genclass(n,prior)
     x0 = numpy.random.randn(N[0],dim)
     x1 = numpy.random.randn(N[1],dim)
     x1[:,0] = x1[:,0] + delta  # move data from class 1
@@ -883,7 +884,7 @@ def gendats(n,dim=2,delta=2.):
     y = genlab(N,(-1,1))
     out = prdataset(x,y)
     out.name = 'Simple dataset'
-    out.prior = [0.5,0.5]
+    out.prior = prior
     return out
 
 def gendatd(n,dim=2,d1=2.,d2=1.):
@@ -906,8 +907,8 @@ def gendatd(n,dim=2,d1=2.,d2=1.):
 
 def gendatb(n,s=1.0):
     r = 5
-    p = [0.5,0.5]
-    N = genclass(n,p)
+    prior = [0.5,0.5]
+    N = genclass(n,prior)
     domaina = 0.125*numpy.pi + 1.25*numpy.pi*numpy.random.rand(N[0],1)
     a = numpy.concatenate((r*numpy.sin(domaina),r*numpy.cos(domaina)),axis=1)
     a += s*numpy.random.randn(N[0],2)
@@ -921,7 +922,23 @@ def gendatb(n,s=1.0):
     y = genlab(N,(-1,1))
     out = prdataset(x,y)
     out.name = 'Banana dataset'
-    out.prior = [0.5,0.5]
+    out.prior = prior
+    return out
+
+def gendath(n,dim=2,delta=2.):
+    prior = [0.5,0.5]
+    N = genclass(n,prior)
+    x0 = numpy.random.randn(N[0],dim)
+    x0[:,0] = x0[:,0] + 1.     # feature 0 from class 0
+    x0[:,1] = 0.5*x0[:,1] + 1  # feature 1 from class 0
+    x1 = numpy.random.randn(N[1],dim)
+    x1[:,0] = 0.1*x1[:,0] + 2. # feature 0 from class 1
+    x1[:,1] = 2.*x1[:,1]       # feature 1 from class 1
+    x = numpy.concatenate((x0,x1),axis=0)
+    y = genlab(N,(-1,1))
+    out = prdataset(x,y)
+    out.name = 'Highleyman dataset'
+    out.prior = prior
     return out
 
 def gendats3(n,dim=2,delta=2.):
