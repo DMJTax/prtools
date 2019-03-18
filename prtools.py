@@ -720,6 +720,37 @@ def knnc(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for knnc.')
 
+def parzenm(task=None,x=None,w=None):
+    "Parzen density estimate per class"
+    if not isinstance(task,basestring):
+        out = prmapping(parzenm,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = [1]
+        return 'Parzen density', x
+    elif (task=="train"):
+        # we only need to store the data
+        # store the parameters, and labels:
+        return x,x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        W = w.data
+        nrcl = len(w.labels)
+        h = w.hyperparam[0]
+        n,dim = x.shape
+        lab = W.nlab()
+        Z = numpy.sqrt(2*numpy.pi)*h**dim
+        out = numpy.zeros((n,nrcl))
+        for i in range(nrcl):
+            xi = W.seldat(i)
+            D = sqeucldist(+x,+xi)
+            out[:,i] = numpy.sum( numpy.exp(-D/(2*h*h)), axis=1)/Z
+        return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for parzenm.')
 
 # === datasets ===============================
 def genclass(n,p):
