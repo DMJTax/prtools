@@ -925,7 +925,7 @@ def gendatb(n,s=1.0):
     out.prior = prior
     return out
 
-def gendath(n,dim=2,delta=2.):
+def gendath(n):
     prior = [0.5,0.5]
     N = genclass(n,prior)
     x0 = numpy.random.randn(N[0],dim)
