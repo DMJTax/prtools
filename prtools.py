@@ -660,12 +660,16 @@ def gaussm(task=None,x=None,w=None):
         return out
     else:
         print(task)
-        raise ValueError('This task is *not* defined for qdc.')
+        raise ValueError('This task is *not* defined for gaussm.')
 
 def ldc(task=None,x=None,w=None):
+    if x is None:
+        x = [0.]
     return gaussm(task,('meancov',x),w)*bayesrule()
 
 def qdc(task=None,x=None,w=None):
+    if x is None:
+        x = [0.]
     return gaussm(task,('full',x),w)*bayesrule()
 
 def nmc(task=None,x=None,w=None):
@@ -880,6 +884,24 @@ def gendats(n,dim=2,delta=2.):
     out = prdataset(x,y)
     out.name = 'Simple dataset'
     out.prior = [0.5,0.5]
+    return out
+
+def gendatd(n,dim=2,d1=2.,d2=1.):
+    prior = [0.5,0.5]
+    N = genclass(n,prior)
+    x0 = numpy.random.randn(N[0],dim)
+    x1 = numpy.random.randn(N[1],dim)
+    x0[:,1] *= numpy.sqrt(40)
+    x1[:,1] *= numpy.sqrt(40)
+    x1[:,0] += d1  # move data from class 1
+    x1[:,1] += d1  # move data from class 1
+    x = numpy.concatenate((x0,x1),axis=0)
+    R = numpy.array([[1.,-1.],[1.,1.]])
+    x[:,0:2] = x[:,0:2].dot(R)
+    y = genlab(N,(-1,1))
+    out = prdataset(x,y)
+    out.name = 'Difficult dataset'
+    out.prior = prior
     return out
 
 def gendatb(n,s=1.0):
