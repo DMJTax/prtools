@@ -769,6 +769,45 @@ def parzenm(task=None,x=None,w=None):
 def parzenc(task=None,x=None,w=None):
     return parzenm(task,x,w)*bayesrule()
 
+def sqeucldist(a,b):
+    n0,dim = a.shape
+    n1,dim1 = b.shape
+    if (dim!=dim1):
+        raise ValueError('Dimensions do not match.')
+    D = numpy.zeros((n0,n1))
+    for i in range(0,n0):
+        for j in range(0,n1):
+            df = a[i,:] - b[j,:]
+            D[i,j] = numpy.dot(df.T,df)
+    return D
+
+def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=3):
+    nrcl = a.nrclasses()
+    clsz = a.classsizes()
+    if (numpy.max(trainsize)>=numpy.min(clsz)):
+        raise ValueError('Not enough objects per class available.')
+    N = len(trainsize)
+    err = numpy.zeros((N,nrreps))
+    err_app = numpy.zeros((N,nrreps))
+    for f in range(nrreps):
+        for i in range(N):
+            sz = trainsize[i]*numpy.ones((1,nrcl))
+            x,z = gendat(a, sz[0],seed=f)
+            w = x*u
+            err[i,f] = z*w*testc()
+            err_app[i,f] = x*w*testc()
+    # show it?
+    h = plt.errorbar(trainsize,numpy.mean(err,axis=1),numpy.std(err,axis=1),\
+            label=u.name)
+    thiscolor = h[0].get_color()
+    plt.errorbar(trainsize,numpy.mean(err_app,axis=1),numpy.std(err_app,axis=1),\
+            fmt='--',color=thiscolor)
+    plt.xlabel('Nr. train objects per class')
+    plt.ylabel('Error')
+    plt.title('Learning curve %s' % a.name)
+    return err, err_app
+
+
 
 # === datasets ===============================
 def genclass(n,p):
@@ -847,32 +886,6 @@ def gendat(x,n,seed=None):
         leftout = leftout.concatenate(xi[J,:])
 
     return out,leftout
-
-def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=1):
-    nrcl = a.nrclasses()
-    clsz = a.classsizes()
-    if (numpy.max(trainsize)>=numpy.min(clsz)):
-        raise ValueError('Not enough objects per class available.')
-    N = len(trainsize)
-    err = numpy.zeros((N,nrreps))
-    err_app = numpy.zeros((N,nrreps))
-    for f in range(nrreps):
-        for i in range(N):
-            sz = trainsize[i]*numpy.ones((1,nrcl))
-            x,z = gendat(a, sz[0],seed=f)
-            w = x*u
-            err[i,f] = z*w*testc()
-            err_app[i,f] = x*w*testc()
-    # show it?
-    h = plt.errorbar(trainsize,numpy.mean(err,axis=1),numpy.std(err,axis=1),\
-            label=u.name)
-    thiscolor = h[0].get_color()
-    plt.errorbar(trainsize,numpy.mean(err_app,axis=1),numpy.std(err_app,axis=1),\
-            fmt='--',color=thiscolor)
-    plt.xlabel('Nr. train objects per class')
-    plt.ylabel('Error')
-    plt.title('Learning curve %s' % a.name)
-    return err, err_app
 
 def gendats(n,dim=2,delta=2.):
     prior = [0.5,0.5]
@@ -955,18 +968,6 @@ def gendats3(n,dim=2,delta=2.):
     out.name = 'Simple dataset'
     out.prior = [1./3,1./3,1./3]
     return out
-
-def sqeucldist(a,b):
-    n0,dim = a.shape
-    n1,dim1 = b.shape
-    if (dim!=dim1):
-        raise ValueError('Dimensions do not match.')
-    D = numpy.zeros((n0,n1))
-    for i in range(0,n0):
-        for j in range(0,n1):
-            df = a[i,:] - b[j,:]
-            D[i,j] = numpy.dot(df.T,df)
-    return D
 
 
 #
