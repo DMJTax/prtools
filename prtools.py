@@ -941,10 +941,10 @@ def gendatb(n,s=1.0):
 def gendath(n):
     prior = [0.5,0.5]
     N = genclass(n,prior)
-    x0 = numpy.random.randn(N[0],dim)
+    x0 = numpy.random.randn(N[0],2)
     x0[:,0] = x0[:,0] + 1.     # feature 0 from class 0
     x0[:,1] = 0.5*x0[:,1] + 1  # feature 1 from class 0
-    x1 = numpy.random.randn(N[1],dim)
+    x1 = numpy.random.randn(N[1],2)
     x1[:,0] = 0.1*x1[:,0] + 2. # feature 0 from class 1
     x1[:,1] = 2.*x1[:,1]       # feature 1 from class 1
     x = numpy.concatenate((x0,x1),axis=0)
