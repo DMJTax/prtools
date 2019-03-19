@@ -33,6 +33,7 @@ class prdataset(object):
         self.featlab = numpy.arange(data.shape[1])
         self.setdata(data)
         self.labels = labels
+        self.weights = []
         self.prior = []
         self.user = []
 
@@ -81,6 +82,8 @@ class prdataset(object):
             return newother(newd)
         elif (isinstance(other,prdataset)):
             other = other.float()
+        else:
+            raise ValueError("Cannot multiply a prdataset with RHS.")
         newd.data *= other
         return newd
     def __div__(self,other):
@@ -768,6 +771,82 @@ def parzenm(task=None,x=None,w=None):
 
 def parzenc(task=None,x=None,w=None):
     return parzenm(task,x,w)*bayesrule()
+
+def stumpc(task=None,x=None,w=None):
+    "Decision stump classifier"
+    if not isinstance(task,basestring):
+        out = prmapping(stumpc,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'Decision stump', ()
+    elif (task=="train"):
+        # we are going to train the mapping
+        if (x.nrclasses() != 2):
+            raise ValueError('Stumpc can only deal with 2 classes.')
+        # allow weights:
+        n,dim = x.shape
+        w = x.weights
+        if (len(w)==0):
+            w = numpy.ones((n,1))
+        w /= numpy.sum(w)
+        # initialise:
+        X = +x
+        y = x.signlab(posclass=0)   # make labels +1/-1
+        Nplus = numpy.sum(w[y>0])
+        Nmin = numpy.sum(w[y<0])
+        bestfeat,bestthres,bestsign,besterr = 0,0,0,10.
+
+        # Do an exhaustive search over all features:
+        for f in range(dim):
+            I = numpy.argsort(X[:,f])
+            sortlab = w*y[I]
+            sumlab = numpy.cumsum(numpy.vstack((Nmin,sortlab)))
+            J = numpy.argmin(sumlab)
+            if (sumlab[J]<besterr):
+                besterr = sumlab[J]
+                bestfeat = f
+                if (J==0):
+                    bestthres = X[0,f] - 1e-6
+                elif (J==n):
+                    bestthres = X[n,f] + 1e-6
+                else:
+                    bestthres = (X[I[J],f]+X[I[J-1],f])/2.
+                bestsign = +1
+            sumlab = numpy.cumsum(numpy.vstack((Nplus,-sortlab)))
+            J = numpy.argmin(sumlab)
+            if (sumlab[J]<besterr):
+                besterr = sumlab[J]
+                bestfeat = f
+                if (J==0):
+                    bestthres = X[0,f] - 1e-6
+                elif (J==n):
+                    bestthres = X[n,f] + 1e-6
+                else:
+                    bestthres = (X[I[J],f]+X[I[J-1],f])/2.
+                bestsign = -1
+
+        # store the parameters, and labels:
+        return (bestfeat,bestthres,bestsign),x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        W = w.data
+        if (W[2]>0):
+            out = (+x[:,W[0]] >= W[1])*1.
+        else:
+            out = (+x[:,W[0]] < W[1])*1.
+        if (len(out.shape)==1):
+            out = out[:,numpy.newaxis]
+        if (x.shape[0]>1) and (out.shape[0]==1):
+            out = out[:,numpy.newaxis]
+        dat = numpy.hstack((out,1.-out))
+        #dat = numpy.hstack((out[:,numpy.newaxis],1.-out[:,numpy.newaxis]))
+        if (x.shape[0]==1):
+            dat = dat[numpy.newaxis,:]  # GRRRR
+        return dat
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for stumpc.')
 
 def sqeucldist(a,b):
     n0,dim = a.shape
