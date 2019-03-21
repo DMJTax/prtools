@@ -11,12 +11,7 @@ class prdataset(object):
     def __init__(self,data,labels=None):
         if isinstance(data,prdataset):
             #self = copy.deepcopy(data) # why does this not work??
-            self.name = data.name
-            self.featlab = data.featlab
-            self.setdata(data.data)
-            self.labels = data.labels
-            self.prior = data.prior
-            self.user = data.user
+            self.__dict__ = data.__dict__.copy()   # sigh..
             return
         if not isinstance(data,(numpy.ndarray, numpy.generic)):
             data = numpy.array(data,ndmin=2)
@@ -76,10 +71,14 @@ class prdataset(object):
         #print('prdataset multiplication with right')
         #print('   self='+str(self))
         #print('   other='+str(other))
-        newd = copy.deepcopy(self)
+
+        #print("Make a copy:")
+        newd = copy.deepcopy(self) # why does this not work??
+        #newd = prdataset(self)
         if (isinstance(other,prmapping)):
             newother = copy.deepcopy(other)
-            return newother(newd)
+            out = newother(newd)
+            return out
         elif (isinstance(other,prdataset)):
             other = other.float()
         else:
@@ -125,6 +124,10 @@ class prdataset(object):
     def nrclasses(self):
         ll = numpy.unique(self.labels)
         return len(ll)
+    def findclass(self,cname):
+        ll = numpy.unique(self.labels)
+        I = numpy.where(ll==cname)
+        return I[0][0]
 
     def __getitem__(self,key):
         newd = copy.deepcopy(self)
@@ -136,8 +139,8 @@ class prdataset(object):
             k2 = range(k2,k2+1)
         newkey = (k1,k2)
         newfeatlab = newd.featlab[key[1]]
-        if not isinstance(newfeatlab,numpy.ndarray):
-            newfeatlab = numpy.ndarray(newfeatlab) # GRR Python
+        if not isinstance(newfeatlab,numpy.ndarray): #DXD why??
+            newfeatlab = numpy.array([newfeatlab]) # GRR Python
         newd.featlab = newfeatlab
         newd = newd.setdata(newd.data[newkey])
         newd.labels = newd.labels[newkey[0]]
@@ -180,7 +183,7 @@ class prmapping(object):
         self.shape = [0,0]
         self.user = []
         if isinstance(x,prdataset):
-            self = self.train(x)
+            self = self.train(copy.deepcopy(x))
 
     def __repr__(self):
         return "prmapping("+self.mapping_func.func_name+","+self.mapping_type+")"
@@ -578,7 +581,10 @@ def testc(task=None,x=None,w=None):
         return None,()
     elif (task=="eval"):
         # we are classifying new data
-        return numpy.mean(labeld(x) != x.labels)
+        err = (labeld(x) != x.labels)*1.
+        if (len(x.weights)>0):
+            err *= x.weights
+        return numpy.mean(err)
     else:
         print(task)
         raise ValueError('This task is *not* defined for testc.')
@@ -607,7 +613,7 @@ def bayesrule(task=None,x=None,w=None):
         return x
     else:
         print(task)
-        raise ValueError('This task is *not* defined for testc.')
+        raise ValueError('This task is *not* defined for bayesrule.')
 
 def gaussm(task=None,x=None,w=None):
     "Gaussian density"
@@ -793,14 +799,15 @@ def stumpc(task=None,x=None,w=None):
         # initialise:
         X = +x
         y = x.signlab(posclass=0)   # make labels +1/-1
-        Nplus = numpy.sum(w[y>0])
-        Nmin = numpy.sum(w[y<0])
+        wy = w*y
+        Nplus = numpy.sum(wy[y>0])
+        Nmin = -numpy.sum(wy[y<0])
         bestfeat,bestthres,bestsign,besterr = 0,0,0,10.
 
         # Do an exhaustive search over all features:
         for f in range(dim):
             I = numpy.argsort(X[:,f])
-            sortlab = w*y[I]
+            sortlab = wy[I]
             sumlab = numpy.cumsum(numpy.vstack((Nmin,sortlab)))
             J = numpy.argmin(sumlab)
             if (sumlab[J]<besterr):
@@ -812,6 +819,7 @@ def stumpc(task=None,x=None,w=None):
                     bestthres = X[n,f] + 1e-6
                 else:
                     bestthres = (X[I[J],f]+X[I[J-1],f])/2.
+                #print("Better feature %d, th=%f, sg=+, has error %f"%(f,bestthres,sumlab[J]))
                 bestsign = +1
             sumlab = numpy.cumsum(numpy.vstack((Nplus,-sortlab)))
             J = numpy.argmin(sumlab)
@@ -821,32 +829,102 @@ def stumpc(task=None,x=None,w=None):
                 if (J==0):
                     bestthres = X[0,f] - 1e-6
                 elif (J==n):
-                    bestthres = X[n,f] + 1e-6
+                    bestthres = X[n-1,f] + 1e-6
                 else:
                     bestthres = (X[I[J],f]+X[I[J-1],f])/2.
+                #print("Better feature %d, th=%f, sg=-, has error %f"%(f,bestthres,sumlab[J]))
                 bestsign = -1
 
         # store the parameters, and labels:
-        return (bestfeat,bestthres,bestsign),x.lablist()
+        #print("In training the decision stump:")
+        #print x.lablist()
+        ll = x.lablist()
+        return (bestfeat,bestthres,bestsign),ll
     elif (task=="eval"):
         # we are applying to new data
         W = w.data
+        X = +x
         if (W[2]>0):
-            out = (+x[:,W[0]] >= W[1])*1.
+            out = (X[:,int(W[0])] >= W[1])*1.
         else:
-            out = (+x[:,W[0]] < W[1])*1.
+            out = (X[:,int(W[0])] < W[1])*1.
+        # How the F*** can I force numpy to behave?!:
         if (len(out.shape)==1):
             out = out[:,numpy.newaxis]
         if (x.shape[0]>1) and (out.shape[0]==1):
-            out = out[:,numpy.newaxis]
+            out = out[:,numpy.newaxis]  # GRRR
         dat = numpy.hstack((out,1.-out))
-        #dat = numpy.hstack((out[:,numpy.newaxis],1.-out[:,numpy.newaxis]))
-        if (x.shape[0]==1):
+        if (x.shape[0]==1) and (dat.shape[0]>1):
             dat = dat[numpy.newaxis,:]  # GRRRR
         return dat
     else:
         print(task)
         raise ValueError('This task is *not* defined for stumpc.')
+
+def adaboostc(task=None,x=None,w=None):
+    "AdaBoost classifier"
+    if not isinstance(task,basestring):
+        out = prmapping(adaboostc,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = [100]
+        return 'AdaBoost', x
+    elif (task=="train"):
+        # we are going to train the mapping
+        # setup vars
+        T = w[0]
+        N = x.shape[0]
+        # find the 'first' class in the dataset: that will be the first output
+        # of the decision stump, and that will be easy to retrieve. We will make
+        # that the positive class
+        Iclass1 = x.lablist()[0]
+        y = 1 - 2*x.nlab()
+        h = numpy.zeros((T,3))
+
+        tmp = prmapping(stumpc)
+        w = numpy.ones((N,1))
+
+        alpha = numpy.zeros((T,1))
+        for t in range(T):
+            #print("Iteration %d in Adaboost" % t)
+            x.weights = w
+            tmp.data, ll = stumpc('train',x)
+            h[t,0],h[t,1],h[t,2] = tmp.data
+            #print('  -> Feature %d, with threshold %f and sign %d'% (h[t,0],h[t,1],h[t,2]))
+            pred = stumpc('eval',x, tmp)
+            # nasty nasty trick [:,:1]
+            pred = 2*pred[:,:1]-1
+            err = numpy.sum(w*(pred!=y))
+            #print('Error is %f' % err)
+            if (err==0):
+                print("Stop it!")
+                perfecth = h[t,:]
+                return (perfecth,1.),x.lablist()
+            alpha[t] = numpy.log(numpy.sum(w)/err - 1.)/2.
+            w *= numpy.exp(-alpha[t]*y*pred)
+        
+        # store the parameters, and labels:
+        return (h,alpha),x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        W = w.data
+        N = x.shape[0]
+        pred = numpy.zeros((N,1))
+        tmp = prmapping(stumpc)
+        for t in range(len(W[1])):
+            #print("Eval hypothesis %d in Adaboost" % t)
+            tmp.data = W[0][t]
+            out = stumpc('eval',x,tmp)
+            out2 = 2.*(+out[:,:1]) - 1.
+            pred += W[1][t]*out2
+        out = numpy.hstack((pred,-pred))
+        return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for adaboostc.')
+
 
 def sqeucldist(a,b):
     n0,dim = a.shape
