@@ -224,10 +224,10 @@ class prmapping(object):
         # maybe the supplied parameters overrule the stored ones:
         if args is not None:
             self.hyperparam = args
-        if (len(self.hyperparam)==0):
-            self.data,self.labels = self.mapping_func('train',x)
-        else:
-            self.data,self.labels = self.mapping_func('train',x,self.hyperparam)
+        #if (len(self.hyperparam)==0):
+        #    self.data,self.labels = self.mapping_func('train',x)
+        #else:
+        self.data,self.labels = self.mapping_func('train',x,self.hyperparam)
 
         self.mapping_type = 'trained'
         # set the input and output sizes 
@@ -976,6 +976,40 @@ def adaboostc(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for adaboostc.')
 
+def pca(task=None,x=None,w=None):
+    "Principal Component Analysis "
+    if not isinstance(task,basestring):
+        out = prmapping(pca,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'PCA', x
+    elif (task=="train"):
+        # we are going to train the mapping
+        if w is None: # no dimensionality given: use all
+            pcadim = x.shape[1]
+        elif (w<1):
+            pcadim = int(w*x.shape[1])
+        else:
+            pcadim = w
+        # get eigenvalues and eigenvectors
+        C = numpy.cov(+x,rowvar=False)
+        l,v = numpy.linalg.eig(C)
+        # sort it:
+        I = numpy.argsort(l)
+        I = I[:pcadim]
+        l = l[I]
+        v = v[:,I]
+        featlab = range(pcadim)
+        # store the parameters, and labels:
+        return v,featlab
+    elif (task=="eval"):
+        # we are applying to new data
+        dat = +x
+        return dat.dot(w.data)
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for pca.')
 
 def sqeucldist(a,b):
     n0,dim = a.shape
