@@ -285,8 +285,11 @@ class prmapping(object):
             # we get a sequential mapping
             leftm = copy.deepcopy(self)
             rightm = copy.deepcopy(other)
-            #out = prmapping(sequentialm,(leftm,rightm))
-            out = sequentialm((leftm,rightm)) # avoid constructor of prmapping
+            # avoid the constructor of prmapping: the constructor will always
+            # return an 'untrained' mapping, while it *might* be possible to
+            # get a trained one when the two input mappings are already
+            # trained:
+            out = sequentialm((leftm,rightm))
             return out
         else:
             raise ValueError('Prmapping times something not defined.')
@@ -312,6 +315,7 @@ def sequentialm(task=None,x=None,w=None):
             if (newm[0].shape[1] != 0) and (newm[1].shape[0] !=0) and \
                     (newm[0].shape[1] != newm[1].shape[0]):
                 raise ValueError('Output size map1 does not match input size map2.')
+            # do the constructor, but make sure that the hyperparameters are None:
             w = prmapping(sequentialm,None)
             w.data = newm
             w.labels = newm[1].labels
