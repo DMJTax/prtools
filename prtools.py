@@ -234,7 +234,7 @@ class prmapping(object):
         if (hasattr(x,'shape')):  # combiners do not eat datasets
             self.shape[0] = x.shape[1]
             # and the output size?
-            xx = +x[0,:]   # hmmm??
+            xx = +x[:1,:]   # hmmm??
             out = self.mapping_func("eval",xx,self)
             self.shape[1] = out.shape[1]
         return self
@@ -285,7 +285,8 @@ class prmapping(object):
             # we get a sequential mapping
             leftm = copy.deepcopy(self)
             rightm = copy.deepcopy(other)
-            out = prmapping(sequentialm,(leftm,rightm))
+            #out = prmapping(sequentialm,(leftm,rightm))
+            out = sequentialm((leftm,rightm)) # avoid constructor of prmapping
             return out
         else:
             raise ValueError('Prmapping times something not defined.')
@@ -308,9 +309,10 @@ def sequentialm(task=None,x=None,w=None):
         if (newm[0].mapping_type=='trained') and \
                 (newm[1].mapping_type=='trained'):
             # now the seq.map is already trained:
-            if (newm[0].shape[1] != newm[1].shape[0]):
+            if (newm[0].shape[1] != 0) and (newm[1].shape[0] !=0) and \
+                    (newm[0].shape[1] != newm[1].shape[0]):
                 raise ValueError('Output size map1 does not match input size map2.')
-            w = prmapping(sequentialm)
+            w = prmapping(sequentialm,None)
             w.data = newm
             w.labels = newm[1].labels
             w.shape[0] = newm[0].shape[0]
@@ -658,13 +660,21 @@ def gaussm(task=None,x=None,w=None):
         return (prior,mn,icov,Z),x.lablist()
     elif (task=="eval"):
         # we are applying to new data
+        X = +x
+        n = X.shape[0]
+        if (len(X.shape)>1):
+            dim = len(X.shape)
+        else:
+            dim = 1
         W = w.data
         c = len(W[0])
-        X = +x
-        out = numpy.zeros((X.shape[0],c))
+        out = numpy.zeros((n,c))
         for i in range(c):
             df = X - W[1][i,:]
-            out[:,i] = W[0][i] * numpy.sum(numpy.dot(df,W[2][i,:,:])*df,axis=1)
+            if (dim>1):
+                out[:,i] = W[0][i] * numpy.sum(numpy.dot(df,W[2][i,:,:])*df,axis=1)
+            else:
+                out[:,i] = W[0][i] * numpy.dot(df,W[2][i,:,:])*df
             out[:,i] = numpy.exp(-out[:,i]/2)/W[3][i]
         return out
     else:
@@ -763,7 +773,6 @@ def parzenm(task=None,x=None,w=None):
         nrcl = len(w.labels)
         h = w.hyperparam[0]
         n,dim = x.shape
-        lab = W.nlab()
         Z = numpy.sqrt(2*numpy.pi)*h**dim
         out = numpy.zeros((n,nrcl))
         for i in range(nrcl):
@@ -777,6 +786,44 @@ def parzenm(task=None,x=None,w=None):
 
 def parzenc(task=None,x=None,w=None):
     return parzenm(task,x,w)*bayesrule()
+
+def naivebm(task=None,x=None,w=None):
+    "Naive Bayes density estimate"
+    if not isinstance(task,basestring):
+        out = prmapping(naivebm,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = [gaussm()]
+        return 'Naive Bayes density', x
+    elif (task=="train"):
+        # we only to estimate the densities for each feature:
+        c = x.shape[1]
+        f = []
+        for i in range(c):
+            u = copy.deepcopy(w[0])
+            f.append(x[:,i:(i+1)]*u)
+        # store the parameters, and labels:
+        return f,x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        W = w.data
+        nrcl = len(w.labels)
+        nrfeat = len(W)
+        if not isinstance(x,prdataset):
+            x = prdataset(x)
+        n,dim = x.shape
+        out = numpy.ones((n,nrcl))
+        for i in range(nrfeat):
+            out *= +(x[:,i:(i+1)]*W[i])
+        return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for naivebm.')
+
+def naivebc(task=None,x=None,w=None):
+    return naivebm(task,x,w)*bayesrule()
 
 def stumpc(task=None,x=None,w=None):
     "Decision stump classifier"
