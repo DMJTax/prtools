@@ -1,7 +1,6 @@
 import numpy
 import matplotlib.pyplot as plt
 import copy
-import sys
 import mlearn
 
 # === prdataset ============================================
@@ -72,9 +71,7 @@ class prdataset(object):
         #print('   self='+str(self))
         #print('   other='+str(other))
 
-        #print("Make a copy:")
-        newd = copy.deepcopy(self) # why does this not work??
-        #newd = prdataset(self)
+        newd = copy.deepcopy(self)
         if (isinstance(other,prmapping)):
             newother = copy.deepcopy(other)
             out = newother(newd)
@@ -976,10 +973,10 @@ def adaboostc(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for adaboostc.')
 
-def pca(task=None,x=None,w=None):
+def pcam(task=None,x=None,w=None):
     "Principal Component Analysis "
     if not isinstance(task,basestring):
-        out = prmapping(pca,task,x)
+        out = prmapping(pcam,task,x)
         return out
     if (task=='untrained'):
         # just return the name, and hyperparameters
@@ -1009,7 +1006,7 @@ def pca(task=None,x=None,w=None):
         return dat.dot(w.data)
     else:
         print(task)
-        raise ValueError('This task is *not* defined for pca.')
+        raise ValueError('This task is *not* defined for pcam.')
 
 def sqeucldist(a,b):
     n0,dim = a.shape
@@ -1047,6 +1044,27 @@ def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=3):
     plt.xlabel('Nr. train objects per class')
     plt.ylabel('Error')
     plt.title('Learning curve %s' % a.name)
+    return err, err_app
+
+def clevalf(a,u,trainsize=0.6,nrreps=3):
+    dim = a.shape[1]
+    err = numpy.zeros((dim,nrreps))
+    err_app = numpy.zeros((dim,nrreps))
+    for f in range(nrreps):
+        for i in range(dim):
+            x,z = gendat(a[:,:i], trainsize,seed=f)
+            w = x*u
+            err[i,f] = z*w*testc()
+            err_app[i,f] = x*w*testc()
+    # show it?
+    h = plt.errorbar(range(dim),numpy.mean(err,axis=1),numpy.std(err,axis=1),\
+            label=u.name)
+    thiscolor = h[0].get_color()
+    plt.errorbar(range(dim),numpy.mean(err_app,axis=1),numpy.std(err_app,axis=1),\
+            fmt='--',color=thiscolor)
+    plt.xlabel('Feature dimensionality')
+    plt.ylabel('Error')
+    plt.title('Feature curve %s' % a.name)
     return err, err_app
 
 
