@@ -116,7 +116,13 @@ class prdataset(object):
         return self
 
     def classsizes(self):
-        (k,count) = numpy.unique(self.labels,return_counts=True)
+        try:
+            (k,count) = numpy.unique(self.labels,return_counts=True)
+        except:
+            ll = numpy.unique(self.labels)
+            count = numpy.zeros((len(ll),1))
+            for i in range(len(ll)):
+                count[i] = numpy.sum(1.*(self.labels==ll[i]))
         return count
     def nrclasses(self):
         ll = numpy.unique(self.labels)
@@ -1121,12 +1127,12 @@ def gendat(x,n,seed=None):
         # take a bootstrap sample:
         I = numpy.random.randint(0,n[i],n[i])
     elif (n[i]<clsz[i]):
-        I = numpy.random.permutation(clsz[i])
+        I = numpy.random.permutation(range(clsz[i]))
         I = I[0:int(n[i])]
     else:
         I = numpy.random.randint(clsz[i],size=int(n[i]))
     out = x1[I,:]
-    allI = numpy.arange(clsz[i])
+    allI = range(clsz[i])
     J = numpy.setdiff1d(allI,I)
     leftout = x1[J,:]
     # now the other classes:
@@ -1136,12 +1142,12 @@ def gendat(x,n,seed=None):
             # take a bootstrap sample:
             I = numpy.random.randint(0,n[i],n[i])
         elif (n[i]<clsz[i]):
-            I = numpy.random.permutation(clsz[i])
+            I = numpy.random.permutation(range(clsz[i]))
             I = I[0:int(n[i])]
         else:
             I = numpy.random.randint(clsz[i],size=int(n[i]))
         out = out.concatenate(xi[I,:])
-        allI = numpy.arange(clsz[i])
+        allI = range(clsz[i])
         J = numpy.setdiff1d(allI,I)
         leftout = leftout.concatenate(xi[J,:])
 
