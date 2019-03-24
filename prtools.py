@@ -1057,7 +1057,7 @@ def clevalf(a,u,trainsize=0.6,nrreps=3):
     err = numpy.zeros((dim,nrreps))
     err_app = numpy.zeros((dim,nrreps))
     for f in range(nrreps):
-        for i in range(dim):
+        for i in range(1,dim):
             x,z = gendat(a[:,:i], trainsize,seed=f)
             w = x*u
             err[i,f] = z*w*testc()
@@ -1171,8 +1171,8 @@ def gendatd(n,dim=2,d1=2.,d2=1.):
     N = genclass(n,prior)
     x0 = numpy.random.randn(N[0],dim)
     x1 = numpy.random.randn(N[1],dim)
-    x0[:,1] *= numpy.sqrt(40)
-    x1[:,1] *= numpy.sqrt(40)
+    x0[:,1:] *= numpy.sqrt(40)
+    x1[:,1:] *= numpy.sqrt(40)
     x1[:,0] += d1  # move data from class 1
     x1[:,1] += d1  # move data from class 1
     x = numpy.concatenate((x0,x1),axis=0)
