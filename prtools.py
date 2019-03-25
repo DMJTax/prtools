@@ -255,6 +255,8 @@ class prmapping(object):
         #else:
         out = self.mapping_func("eval",x,self)
         if ((len(self.labels)>0) and (out.shape[1] != len(self.labels))):
+            print(out.shape)
+            print(self.labels)
             raise ValueError('Output of mapping does not match number of labels.')
         #if isinstance(x,prdataset):
         if (len(self.labels)>0):  # is this better than above?
@@ -597,6 +599,44 @@ def testc(task=None,x=None,w=None):
     else:
         print(task)
         raise ValueError('This task is *not* defined for testc.')
+
+def mclassc(task=None,x=None,w=None):
+    "Multiclass classifier from two-class classifier"
+    if not isinstance(task,basestring):
+        out = prmapping(mclassc,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if isinstance(x,prmapping):
+            name = 'Multiclass '+x.name
+        else:
+            name = 'Multiclass'
+        return name, x
+    elif (task=="train"):
+        # we are going to train the mapping
+        c = x.nrclasses()
+        lablist = x.lablist()
+        orglab = x.nlab()
+        f = []
+        for i in range(c):
+            newlab = (orglab==i)*2. - 1.
+            x.labels = newlab
+            u = copy.deepcopy(w)
+            f.append(u.train(x))
+        # store the parameters, and labels:
+        return f,lablist
+    elif (task=="eval"):
+        # we are applying to new data
+        W = w.data
+        c = len(W)
+        pred = numpy.zeros((x.shape[0],c))
+        for i in range(c):
+            out = +(W[i](x))
+            pred[:,i:(i+1)] = out[:,:1]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for mclassc.')
 
 def bayesrule(task=None,x=None,w=None):
     "Bayesrule"
