@@ -253,18 +253,18 @@ class prmapping(object):
         #    x_nolab.labels = ()
         #    out = self.mapping_func("eval",x_nolab,self)
         #else:
-        out = self.mapping_func("eval",x,self)
+        newx = copy.deepcopy(x)
+        out = self.mapping_func("eval",newx,self)
         if ((len(self.labels)>0) and (out.shape[1] != len(self.labels))):
             print(out.shape)
             print(self.labels)
             raise ValueError('Output of mapping does not match number of labels.')
-        #if isinstance(x,prdataset):
         if (len(self.labels)>0):  # is this better than above?
             if not isinstance(x,prdataset):
-                x = prdataset(x)
-            x.featlab = self.labels
-            x = x.setdata(+out)
-            return x
+                newx = prdataset(newx)
+            newx.featlab = self.labels
+            newx = newx.setdata(+out)
+            return newx
         else:
             return out
 
@@ -633,11 +633,7 @@ def mclassc(task=None,x=None,w=None):
         for i in range(c):
             out = +(W[i](x))
             # which output should we choose?
-            #print(W[i].labels)
-            #print(W[i].labels==1)
             I = numpy.where(W[i].labels==1)
-            #print(I[0])
-            #print(out[:,I])
             pred[:,i:(i+1)] = out[:,I[0]]
         return pred
     else:
