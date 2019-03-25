@@ -619,7 +619,7 @@ def mclassc(task=None,x=None,w=None):
         orglab = x.nlab()
         f = []
         for i in range(c):
-            newlab = (orglab==i)*2. - 1.
+            newlab = (orglab==i)*2 - 1
             x.labels = newlab
             u = copy.deepcopy(w)
             f.append(u.train(x))
@@ -632,7 +632,13 @@ def mclassc(task=None,x=None,w=None):
         pred = numpy.zeros((x.shape[0],c))
         for i in range(c):
             out = +(W[i](x))
-            pred[:,i:(i+1)] = out[:,:1]
+            # which output should we choose?
+            #print(W[i].labels)
+            #print(W[i].labels==1)
+            I = numpy.where(W[i].labels==1)
+            #print(I[0])
+            #print(out[:,I])
+            pred[:,i:(i+1)] = out[:,I[0]]
         return pred
     else:
         print(task)
@@ -799,7 +805,7 @@ def fisherc(task=None,x=None,w=None):
         out = X.dot(W[0]) - W[1] 
         if (len(out.shape)<2):  # This numpy is pathetic
             out = out[:,numpy.newaxis]
-        gr = numpy.hstack((out,-out))
+        gr = numpy.hstack((-out,out))
         if (len(gr.shape)<2):
             gr = gr[numpy.newaxis,:]
         return gr
