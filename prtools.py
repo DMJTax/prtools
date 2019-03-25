@@ -724,6 +724,49 @@ def nmc(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for nmc.')
 
+def fisherc(task=None,x=None,w=None):
+    "Fisher classifier"
+    if not isinstance(task,basestring):
+        out = prmapping(fisherc,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'Fisher', ()
+    elif (task=="train"):
+        # we are going to train the mapping
+        c = x.nrclasses()
+        dim = x.shape[1]
+        if (c>2):
+            raise ValueError('Fisher classifier is defined for two classes.')
+        mn = numpy.zeros((c,dim))
+        cv = numpy.zeros((dim,dim))
+        v0 = 0.
+        for i in range(c):
+            xi = x.seldat(i)
+            mn[i,:] = numpy.mean(+xi,axis=0)
+            thiscov = numpy.cov(+xi,rowvar=False)
+            cv += thiscov
+            icv = numpy.linalg.inv(thiscov)
+            v0 += mn[i,].dot(icv.dot(mn[i,:]))/2.
+        cv /= c # normalise by nr. of classes (2)
+        v = numpy.linalg.inv(cv).dot(mn[1,:]-mn[0,:])
+        # store the parameters, and labels:
+        return (v,v0),x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        W = w.data
+        X = +x
+        out = X.dot(W[0]) - W[1] 
+        if (len(out.shape)<2):  # This numpy is pathetic
+            out = out[:,numpy.newaxis]
+        gr = numpy.hstack((out,-out))
+        if (len(gr.shape)<2):
+            gr = gr[numpy.newaxis,:]
+        return gr
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for fisherc.')
+
 def knnm(task=None,x=None,w=None):
     "k-Nearest neighbor classifier"
     if not isinstance(task,basestring):
@@ -1052,7 +1095,7 @@ def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=3):
     plt.title('Learning curve %s' % a.name)
     return err, err_app
 
-def clevalf(a,u,trainsize=0.6,nrreps=3):
+def clevalf(a,u,trainsize=0.6,nrreps=5):
     dim = a.shape[1]
     err = numpy.zeros((dim,nrreps))
     err_app = numpy.zeros((dim,nrreps))
