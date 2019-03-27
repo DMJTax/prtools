@@ -1129,8 +1129,17 @@ def svc(task=None,x=None,w=None):
     if (task=='untrained'):
         # just return the name, and hyperparameters
         if x is None:
+            kernel = 'rbf'
             x = 1.
-        clf = sklearn.svm.SVC(gamma=x,probability=True)
+            C = 1.
+        else:
+            kernel = x[0]
+            C = x[2]
+            x = x[1]
+        if (kernel=='linear'):
+            clf = sklearn.svm.SVC(kernel='linear',degree=x,C=C,probability=True)
+        else:
+            clf = sklearn.svm.SVC(kernel='rbf',gamma=x,C=C,probability=True)
         return 'Support vector classifier', clf
     elif (task=="train"):
         # we are going to train the mapping
