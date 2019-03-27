@@ -746,12 +746,16 @@ def gaussm(task=None,x=None,w=None):
 def ldc(task=None,x=None,w=None):
     if x is None:  # no regularization of the cov.matrix
         x = [0.]
-    return gaussm(task,('meancov',x))*bayesrule()
+    u = gaussm(task,('meancov',x))*bayesrule()
+    u.name = 'LDA'
+    return u
 
 def qdc(task=None,x=None,w=None):
     if x is None:
         x = [0.]
-    return gaussm(task,('full',x))*bayesrule()
+    u = gaussm(task,('full',x))*bayesrule()
+    u.name = 'QDA'
+    return u
 
 def nmc(task=None,x=None,w=None):
     "Nearest mean classifier"
