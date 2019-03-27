@@ -2,6 +2,7 @@ import numpy
 import matplotlib.pyplot as plt
 import copy
 import mlearn
+import sklearn
 
 # === prdataset ============================================
 class prdataset(object):
@@ -323,9 +324,13 @@ def sequentialm(task=None,x=None,w=None):
             # do the constructor, but make sure that the hyperparameters are None:
             w = prmapping(sequentialm,None)
             w.data = newm
-            w.labels = newm[1].labels
             w.shape[0] = newm[0].shape[0]
             w.shape[1] = newm[1].shape[1]
+            if (len(newm[1].labels)==0) and (newm[1].shape[1]==0):
+                # the second mapping does not have labels and sizes defined:
+                w.labels = newm[0].labels
+            else:
+                w.labels = newm[1].labels
             w.mapping_type = 'trained'
             w.name = newm[0].name+'+'+newm[1].name
             return w
@@ -356,7 +361,13 @@ def sequentialm(task=None,x=None,w=None):
         if (u[1].mapping_type=='untrained'):
             neww = u[1].train(x2)
             u = (u[0],neww)
-        return u, u[1].labels
+        # fix the labels:
+        if (len(u[1].labels)==0) and (u[1].shape[1]==0):
+            # the second mapping does not have labels and sizes defined:
+            labels = u[0].labels
+        else:
+            labels = u[1].labels
+        return u, labels
     elif (task=="eval"):
         # we are applying to new data
         W = w.data   # get the parameters out
@@ -619,6 +630,7 @@ def mclassc(task=None,x=None,w=None):
         orglab = x.nlab()
         f = []
         for i in range(c):
+            # relabel class i to +1, and the rest to -1:
             newlab = (orglab==i)*2 - 1
             x.labels = newlab
             u = copy.deepcopy(w)
@@ -633,7 +645,7 @@ def mclassc(task=None,x=None,w=None):
         for i in range(c):
             out = +(W[i](x))
             # which output should we choose?
-            I = numpy.where(W[i].labels==1)
+            I = numpy.where(W[i].labels==+1)
             pred[:,i:(i+1)] = out[:,I[0]]
         return pred
     else:
@@ -731,14 +743,14 @@ def gaussm(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for gaussm.')
 
 def ldc(task=None,x=None,w=None):
-    if x is None:
+    if x is None:  # no regularization of the cov.matrix
         x = [0.]
-    return gaussm(task,('meancov',x),w)*bayesrule()
+    return gaussm(task,('meancov',x))*bayesrule()
 
 def qdc(task=None,x=None,w=None):
     if x is None:
         x = [0.]
-    return gaussm(task,('full',x),w)*bayesrule()
+    return gaussm(task,('full',x))*bayesrule()
 
 def nmc(task=None,x=None,w=None):
     "Nearest mean classifier"
@@ -787,11 +799,15 @@ def fisherc(task=None,x=None,w=None):
             xi = x.seldat(i)
             mn[i,:] = numpy.mean(+xi,axis=0)
             thiscov = numpy.cov(+xi,rowvar=False)
+            #DXD: is this a good idea?
+            thiscov += 1e-9*numpy.eye(dim)
             cv += thiscov
             icv = numpy.linalg.inv(thiscov)
+            #icv = numpy.linalg.pinv(thiscov)
             v0 += mn[i,].dot(icv.dot(mn[i,:]))/2.
         cv /= c # normalise by nr. of classes (2)
         v = numpy.linalg.inv(cv).dot(mn[1,:]-mn[0,:])
+        #v = numpy.linalg.pinv(cv).dot(mn[1,:]-mn[0,:])
         # store the parameters, and labels:
         return (v,v0),x.lablist()
     elif (task=="eval"):
@@ -812,7 +828,7 @@ def fisherc(task=None,x=None,w=None):
 def knnm(task=None,x=None,w=None):
     "k-Nearest neighbor classifier"
     if not isinstance(task,basestring):
-        out = prmapping(knnc,task,x)
+        out = prmapping(knnm,task,x)
         return out
     if (task=='untrained'):
         # just return the name, and hyperparameters
@@ -843,7 +859,7 @@ def knnm(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for knnc.')
 
 def knnc(task=None,x=None,w=None):
-    return knnm(task,x,w)*bayesrule()
+    return knnm(task,x)*bayesrule()
 
 def parzenm(task=None,x=None,w=None):
     "Parzen density estimate per class"
@@ -916,6 +932,47 @@ def naivebm(task=None,x=None,w=None):
 
 def naivebc(task=None,x=None,w=None):
     return naivebm(task,x,w)*bayesrule()
+
+def baggingc(task=None,x=None,w=None):
+    "Bagging"
+    if not isinstance(task,basestring):
+        out = prmapping(baggingc,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = (nmc,100)
+        return 'Baggingc', x
+    elif (task=="train"):
+        # we are going to train the mapping
+        clsz = x.classsizes()
+        f = []
+        for t in range(w[1]):
+            xtr,xtst = gendat(x,clsz) # just a simple bootstrap
+            #DXD we could do feature subsampling as well..
+            u = copy.deepcopy(w[0])
+            f.append(u(xtr))
+        # store the parameters, and labels:
+        return (f),x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        X = +x
+        n = X.shape[0]
+        W = w.data
+        T = len(W)  # nr of aggregated classifiers
+        c = len(W[0].labels) # nr of classes
+        out = numpy.zeros((n,c))
+        J = range(n)
+        for i in range(T):
+            # do majority voting:
+            pred = W[i](X)
+            I = numpy.argmax(+pred,axis=1)
+            out[J,I] += 1 
+
+        return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for baggingc.')
 
 def stumpc(task=None,x=None,w=None):
     "Decision stump classifier"
@@ -1064,6 +1121,36 @@ def adaboostc(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for adaboostc.')
 
+def svc(task=None,x=None,w=None):
+    "Support vector classifier"
+    if not isinstance(task,basestring):
+        out = prmapping(svc,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = 1.
+        clf = sklearn.svm.SVC(gamma=x,probability=True)
+        return 'Support vector classifier', clf
+    elif (task=="train"):
+        # we are going to train the mapping
+        X = +x
+        y = numpy.ravel(x.labels)
+        clf = copy.deepcopy(w)
+        clf.fit(X,y)
+        return clf,x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        clf = w.data
+        pred = clf.decision_function(+x) 
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+            pred = numpy.hstack((-pred,pred)) # sigh
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for svc.')
+
 def pcam(task=None,x=None,w=None):
     "Principal Component Analysis "
     if not isinstance(task,basestring):
@@ -1120,6 +1207,7 @@ def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=3):
     err = numpy.zeros((N,nrreps))
     err_app = numpy.zeros((N,nrreps))
     for f in range(nrreps):
+        print("Iteration %d." % f)
         for i in range(N):
             sz = trainsize[i]*numpy.ones((1,nrcl))
             x,z = gendat(a, sz[0],seed=f)
