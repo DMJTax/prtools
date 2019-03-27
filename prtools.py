@@ -2,7 +2,8 @@ import numpy
 import matplotlib.pyplot as plt
 import copy
 import mlearn
-import sklearn
+from sklearn import svm
+from sklearn import tree
 
 # === prdataset ============================================
 class prdataset(object):
@@ -1137,9 +1138,9 @@ def svc(task=None,x=None,w=None):
             C = x[2]
             x = x[1]
         if (kernel=='linear'):
-            clf = sklearn.svm.SVC(kernel='linear',degree=x,C=C,probability=True)
+            clf = svm.SVC(kernel='linear',degree=x,C=C,probability=True)
         else:
-            clf = sklearn.svm.SVC(kernel='rbf',gamma=x,C=C,probability=True)
+            clf = svm.SVC(kernel='rbf',gamma=x,C=C,probability=True)
         return 'Support vector classifier', clf
     elif (task=="train"):
         # we are going to train the mapping
@@ -1159,6 +1160,34 @@ def svc(task=None,x=None,w=None):
     else:
         print(task)
         raise ValueError('This task is *not* defined for svc.')
+
+def dectreec(task=None,x=None,w=None):
+    "Decision tree classifier"
+    if not isinstance(task,basestring):
+        out = prmapping(dectreec,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        clf = sklearn.tree.DecisionTreeClassifier(probability=True)
+        return 'Decision tree', clf
+    elif (task=="train"):
+        # we are going to train the mapping
+        X = +x
+        y = numpy.ravel(x.labels)
+        clf = copy.deepcopy(w)
+        clf.fit(X,y)
+        return clf,x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        clf = w.data
+        pred = clf.decision_function(+x) 
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+            pred = numpy.hstack((-pred,pred)) # sigh
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for dectreec.')
 
 def pcam(task=None,x=None,w=None):
     "Principal Component Analysis "
