@@ -216,6 +216,8 @@ def sequentialm(task=None,x=None,w=None):
 
 def plotc(f,levels=[0.0],colors=None,gridsize = 30):
     ax = plt.gca()
+    if colors is None:
+        colors = next(ax._get_lines.prop_cycler)['color']
     xl = ax.get_xlim()
     yl = ax.get_ylim()
     dx = (xl[1]-xl[0])/(gridsize-1)
@@ -241,6 +243,8 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
 
 def plotm(f,nrlevels=10,colors=None,gridsize = 30):
     ax = plt.gca()
+    if colors is None:
+        colors = next(ax._get_lines.prop_cycler)['color']
     xl = ax.get_xlim()
     yl = ax.get_ylim()
     dx = (xl[1]-xl[0])/(gridsize-1)
