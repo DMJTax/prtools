@@ -226,6 +226,11 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
     X0.shape = (gridsize*gridsize, 1)
     X1.shape = (gridsize*gridsize, 1)
     dat = numpy.hstack((X0,X1))
+    if (f.shape[0]>2):
+        print("PLOTC: Mapping is >2D, set remaining inputs to 0.")
+        X2 = numpy.zeros((gridsize*gridsize,f.shape[0]-2))
+        dat = numpy.hstack((dat,X2))
+
     out = +f(dat)
     for i in range(1,out.shape[1]):
         otherout = copy.deepcopy(out)
@@ -246,6 +251,11 @@ def plotm(f,nrlevels=10,colors=None,gridsize = 30):
     X0.shape = (gridsize*gridsize, 1)
     X1.shape = (gridsize*gridsize, 1)
     dat = numpy.hstack((X0,X1))
+    if (f.shape[0]>2):
+        print("PLOTM: Mapping is >2D, set remaining inputs to 0.")
+        X2 = numpy.zeros((gridsize*gridsize,f.shape[0]-2))
+        dat = numpy.hstack((dat,X2))
+
     out = +f(dat)
     for i in range(out.shape[1]):
         z = out[:,i]
