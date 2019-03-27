@@ -1168,7 +1168,11 @@ def dectreec(task=None,x=None,w=None):
         return out
     if (task=='untrained'):
         # just return the name, and hyperparameters
-        clf = sklearn.tree.DecisionTreeClassifier(probability=True)
+        if x is None:
+            max_d = None
+        else:
+            max_d = x[0]
+        clf = tree.DecisionTreeClassifier(max_depth=max_d)
         return 'Decision tree', clf
     elif (task=="train"):
         # we are going to train the mapping
@@ -1180,7 +1184,7 @@ def dectreec(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are applying to new data
         clf = w.data
-        pred = clf.decision_function(+x) 
+        pred = clf.predict_proba(+x) 
         if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
             pred = pred[:,numpy.newaxis]
             pred = numpy.hstack((-pred,pred)) # sigh
