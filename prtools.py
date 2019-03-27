@@ -1309,7 +1309,7 @@ class prdataset(object):
         return newd[I[0],:]   # grr, this python..
 
     def getprior(self):
-        if (len(self.prior)>0) and (self.prior>0):
+        if (len(self.prior)>0):
             return self.prior
         sz = self.classsizes()
         return sz/float(numpy.sum(sz))
