@@ -37,6 +37,7 @@ then train the second mapping on the training set etc.
 3. For two-dimensional data it is very easy to visualise classifiers. This can
 be done by the command:
 
+> scatterd(a)
 > plotc(w)
 
 
