@@ -95,6 +95,7 @@ class prmapping(object):
         if ((len(self.labels)>0) and (out.shape[1] != len(self.labels))):
             print(out.shape)
             print(self.labels)
+            print(len(self.labels))
             raise ValueError('Output of mapping does not match number of labels.')
         if (len(self.labels)>0):  # is this better than above?
             if not isinstance(x,prdataset):
@@ -266,6 +267,17 @@ def plotm(f,nrlevels=10,colors=None,gridsize = 30):
         levels = numpy.linspace(numpy.min(z),numpy.max(z),nrlevels)
         z.shape = (gridsize,gridsize)
         plt.contour(x,y,z,levels,colors=colors)
+
+def plotr(f,color=None,gridsize=30):
+    ax = plt.gca()
+    if color is None:
+        color = next(ax._get_lines.prop_cycler)['color']
+    xl = ax.get_xlim()
+    dx = (xl[1]-xl[0])/(gridsize-1)
+    x = numpy.arange(xl[0],xl[1]+0.01*dx,dx)
+    xx = prdataset(x[:,numpy.newaxis])
+    y = +f(xx)
+    plt.plot(x,y,color=color)
 
 # === mappings ===============================
 
@@ -1128,6 +1140,32 @@ def clevalf(a,u,trainsize=0.6,nrreps=5):
     plt.title('Feature curve %s' % a.name)
     return err, err_app
 
+def linearr(task=None,x=None,w=None):
+    "Linear regression"
+    if not isinstance(task,str):
+        out = prmapping(linearr,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = 0.
+        return 'Ordinary least squares', x
+    elif (task=="train"):
+        # we are going to train the mapping
+        n,dim = x.shape
+        dat = numpy.hstack((+x,numpy.ones((n,1))))
+        Sinv = numpy.linalg.inv(dat.T.dot(dat) + w*numpy.eye(dim))
+        beta = Sinv.dot(dat.T).dot(x.labels)
+        # store the parameters, and labels:
+        return beta,['target']
+    elif (task=="eval"):
+        # we are applying to new data
+        n = x.shape[0]
+        dat = numpy.hstack((+x,numpy.ones((n,1))))
+        return dat.dot(w.data)
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for linearr.')
 
 
 #
