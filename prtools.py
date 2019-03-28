@@ -1338,6 +1338,13 @@ def scatterd(a):
     plt.ylabel('Feature '+str(ylab))
     plt.winter()
 
+def scatterr(a):
+    plt.scatter(a.data[:,0],a.labels)
+    plt.title(a.name)
+    plt.xlabel('Feature '+str(a.featlab[0]))
+    plt.ylabel('Target')
+    plt.winter()
+
 # === datasets ===============================
 def genclass(n,p):
     "Generate class frequency distribution"
@@ -1498,5 +1505,11 @@ def gendats3(n,dim=2,delta=2.):
     out.prior = [1./3,1./3,1./3]
     return out
 
+def gendatsinc(n=25,sigm=0.1):
+    x = -5. + 10.*numpy.random.rand(n,1)
+    y = numpy.sin(numpy.pi*x)/(numpy.pi*x) + sigm*numpy.random.randn(n,1)
+    out = prdataset(x,y)
+    out.name = 'Sinc'
+    return out
 
 
