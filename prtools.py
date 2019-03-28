@@ -1140,6 +1140,35 @@ def clevalf(a,u,trainsize=0.6,nrreps=5):
     plt.title('Feature curve %s' % a.name)
     return err, err_app
 
+def vandermondem(task=None,x=None,w=None):
+    "Vandermonde Matrix"
+    if not isinstance(task,str):
+        out = prmapping(vandermondem,task,x)
+        out.mapping_type = "trained"
+        if isinstance(task,prdataset):
+            out = out(task)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = 1
+        return 'Vandermonde', x
+    elif (task=="train"):
+        # nothing to train for a fixed mapping
+        return None,()
+    elif (task=="eval"):
+        # we are applying to new data
+        n = x.shape[0]
+        XX = +x
+        dat = numpy.hstack((numpy.ones((n,1)),XX))
+        for i in range(1,w.hyperparam):
+            XX *= +x
+            dat = numpy.hstack((dat,XX))
+        return dat
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for vandermondem.')
+
 def linearr(task=None,x=None,w=None):
     "Linear regression"
     if not isinstance(task,str):
@@ -1150,6 +1179,33 @@ def linearr(task=None,x=None,w=None):
         if x is None:
             x = 0.
         return 'Ordinary least squares', x
+    elif (task=="train"):
+        # we are going to train the mapping
+        n,dim = x.shape
+        dat = numpy.hstack((+x,numpy.ones((n,1))))
+        Sinv = numpy.linalg.inv(dat.T.dot(dat))
+        beta = Sinv.dot(dat.T).dot(x.labels)
+        # store the parameters, and labels:
+        return beta,['target']
+    elif (task=="eval"):
+        # we are applying to new data
+        n = x.shape[0]
+        dat = numpy.hstack((+x,numpy.ones((n,1))))
+        return dat.dot(w.data)
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for linearr.')
+
+def ridger(task=None,x=None,w=None):
+    "Ridge regression"
+    if not isinstance(task,str):
+        out = prmapping(ridger,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = 0.
+        return 'Ridge regression', x
     elif (task=="train"):
         # we are going to train the mapping
         n,dim = x.shape
@@ -1165,7 +1221,7 @@ def linearr(task=None,x=None,w=None):
         return dat.dot(w.data)
     else:
         print(task)
-        raise ValueError('This task is *not* defined for linearr.')
+        raise ValueError('This task is *not* defined for ridger.')
 
 
 #
