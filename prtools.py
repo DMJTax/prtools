@@ -1223,6 +1223,34 @@ def ridger(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for ridger.')
 
+def kernelr(task=None,x=None,w=None):
+    "Kernel regression"
+    if not isinstance(task,str):
+        out = prmapping(kernelr,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = 1.
+        return 'Kernel regression', x
+    elif (task=="train"):
+        # we only need to store the data
+        return (+x,x.labels),['target']
+    elif (task=="eval"):
+        # we are applying to new data
+        W = w.data
+        X = W[0]
+        y = W[1]
+        gamma = -1/(w.hyperparam*w.hyperparam)
+        n = x.shape[0]
+        K = numpy.exp(gamma*sqeucldist(+x,X))
+        out = K.dot(y)
+        out = out/numpy.sum(K,axis=1,keepdims=True)
+        return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for kernelr.')
+
 
 #
 def m2p(f,*args):
