@@ -38,6 +38,7 @@ then train the second mapping on the training set etc.
 be done by the command:
 
 > scatterd(a)
+
 > plotc(w)
 
 
