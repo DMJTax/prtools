@@ -1177,12 +1177,12 @@ def linearr(task=None,x=None,w=None):
     if (task=='untrained'):
         # just return the name, and hyperparameters
         if x is None:
-            x = 0.
+            x = 1
         return 'Ordinary least squares', x
     elif (task=="train"):
         # we are going to train the mapping
         n,dim = x.shape
-        dat = numpy.hstack((+x,numpy.ones((n,1))))
+        dat = +vandermondem(x,w)
         Sinv = numpy.linalg.inv(dat.T.dot(dat))
         beta = Sinv.dot(dat.T).dot(x.labels)
         # store the parameters, and labels:
@@ -1190,7 +1190,7 @@ def linearr(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are applying to new data
         n = x.shape[0]
-        dat = numpy.hstack((+x,numpy.ones((n,1))))
+        dat = +vandermondem(prdataset(x),w.hyperparam)
         return dat.dot(w.data)
     else:
         print(task)
