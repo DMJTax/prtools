@@ -268,7 +268,7 @@ def plotm(f,nrlevels=10,colors=None,gridsize = 30):
         z.shape = (gridsize,gridsize)
         plt.contour(x,y,z,levels,colors=colors)
 
-def plotr(f,color=None,gridsize=30):
+def plotr(f,color=None,gridsize=100):
     ax = plt.gca()
     if color is None:
         color = next(ax._get_lines.prop_cycler)['color']
