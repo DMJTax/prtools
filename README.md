@@ -16,9 +16,17 @@ and the corresponding labels are returned in b as well.
 
 When this mapping is trained on dataset a, like:
 
+> w = a*u
+
+or
+
 > w = u.train(a)
 
 all steps in the sequence is trained. And in the evaluation on new data, like:
+
+> pred = w(b)
+
+or
 
 > pred = b*w
 
@@ -28,6 +36,8 @@ then train the second mapping on the training set etc.
 
 3. For two-dimensional data it is very easy to visualise classifiers. This can
 be done by the command:
+
+> scatterd(a)
 
 > plotc(w)
 
