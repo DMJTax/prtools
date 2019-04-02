@@ -1,3 +1,8 @@
+""" Prtools for Python
+
+An attempt to port the ideas of prdataset and prmapping to Python.
+"""
+
 import numpy
 import matplotlib.pyplot as plt
 import copy
@@ -211,7 +216,7 @@ def sequentialm(task=None,x=None,w=None):
         return W[1](W[0](x))
     else:
         print(task)
-        raise ValueError('This task is *not* defined for scalem.')
+        raise ValueError('This task is *not* defined for sequentialm.')
 
 # === useful functions =====================================
 
