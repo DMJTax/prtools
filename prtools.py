@@ -382,10 +382,8 @@ def softmax(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are applying to new data
         dat = numpy.exp(+x)
-        sumx = numpy.sum(dat,axis=1)
-        sumx = sumx[:,numpy.newaxis]
-        x.setdata( dat/sumx )
-        return x
+        sumx = numpy.sum(dat,axis=1,keepdims=True)
+        return dat/sumx
     else:
         print(task)
         raise ValueError('This task is *not* defined for softmax.')
@@ -523,8 +521,8 @@ def bayesrule(task=None,x=None,w=None):
             dat = x.data*x.prior
         else:
             dat = x.data
-        Z = numpy.sum(dat,axis=1)
-        out = dat/Z[:,numpy.newaxis]
+        Z = numpy.sum(dat,axis=1,keepdims=True)
+        out = dat/Z
         x = x.setdata(out)
         return x
     else:
