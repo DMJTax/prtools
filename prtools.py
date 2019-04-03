@@ -9,7 +9,7 @@ import copy
 from sklearn import svm
 from sklearn import tree
 
-from mapping import prmapping
+from mapping import prmapping,plotc
 from dataset import prdataset, genclass,genlab,scatterd
 
 
@@ -173,6 +173,7 @@ def testc(task=None,x=None,w=None):
     "Test classifier"
     if not isinstance(task,str):
         out = prmapping(testc)
+        out.labels = numpy.NaN
         out.mapping_type = "trained"
         return out
     if (task=='untrained'):
@@ -180,7 +181,7 @@ def testc(task=None,x=None,w=None):
         return 'Test classifier', ()
     elif (task=="train"):
         # nothing to train
-        return None,()
+        return None,0
     elif (task=="eval"):
         # we are classifying new data
         err = (labeld(x) != x.labels)*1.
@@ -190,6 +191,7 @@ def testc(task=None,x=None,w=None):
     else:
         print(task)
         raise ValueError('This task is *not* defined for testc.')
+
 
 def mclassc(task=None,x=None,w=None):
     "Multiclass classifier from two-class classifier"
@@ -246,6 +248,8 @@ def bayesrule(task=None,x=None,w=None):
         return None,()
     elif (task=="eval"):
         # we are classifying new data
+        if not isinstance(x,prdataset):
+            x = prdataset(x)
         if (len(x.prior)>0):
             dat = x.data*x.prior
         else:
