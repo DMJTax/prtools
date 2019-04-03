@@ -77,14 +77,27 @@ class prdataset(object):
         #print('   self='+str(self))
         #print('   other='+str(other))
 
-        newd = copy.deepcopy(self)
         if (isinstance(other,prdataset)):
             other = other.float()
+        if (isinstance(other,(int,float))):
+            newd = copy.deepcopy(self)
+            newd.data *= other
+            return newd
         else:
             return NotImplemented
-            #raise ValueError("Cannot multiply a prdataset with RHS.")
-        newd.data *= other
-        return newd
+    def __rmul__(self,other):
+        #print('prdataset multiplication with right')
+        #print('   self='+str(self))
+        #print('   other='+str(other))
+
+        if (isinstance(other,prdataset)):
+            other = other.float()
+        if (isinstance(other,(int,float))):
+            newd = copy.deepcopy(self)
+            newd.data *= other
+            return newd
+        else:
+            return NotImplemented
     def __div__(self,other):
         newd = copy.deepcopy(self)
         if (isinstance(other,prdataset)):
@@ -119,7 +132,7 @@ class prdataset(object):
         return self
 
     def classsizes(self):
-        try:
+        try:       # in older versions of numpy the 'count' is not available
             (k,count) = numpy.unique(self.labels,return_counts=True)
         except:
             ll = numpy.unique(self.labels)
