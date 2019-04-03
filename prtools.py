@@ -9,8 +9,8 @@ import copy
 from sklearn import svm
 from sklearn import tree
 
-from mapping import prmapping,plotc
-from dataset import prdataset, genclass,genlab,scatterd
+from mapping import prmapping,sequentialm,plotc,plotm
+from dataset import prdataset, genclass,genlab,gendat,scatterd
 
 
 # === mappings ===============================
@@ -344,8 +344,7 @@ def qdc(task=None,x=None,w=None):
 def nmc(task=None,x=None,w=None):
     "Nearest mean classifier"
     if not isinstance(task,str):
-        out = prmapping(nmc,task,x)
-        return out
+        return prmapping(nmc,task,x)
     if (task=='untrained'):
         # just return the name, and hyperparameters
         return 'Nearest mean', ()
@@ -360,9 +359,7 @@ def nmc(task=None,x=None,w=None):
         return mn,x.lablist()
     elif (task=="eval"):
         # we are applying to new data
-        W = w.data
-        out = sqeucldist(+x,W)
-        return -out
+        return -sqeucldist(+x,w.data)
     else:
         print(task)
         raise ValueError('This task is *not* defined for nmc.')
@@ -404,7 +401,7 @@ def fisherc(task=None,x=None,w=None):
         W = w.data
         X = +x
         out = X.dot(W[0]) - W[1] 
-        if (len(out.shape)<2):  # This numpy is pathetic
+        if (len(out.shape)<2):  # This numpy/python stuff is pathetic
             out = out[:,numpy.newaxis]
         gr = numpy.hstack((-out,out))
         if (len(gr.shape)<2):
@@ -417,8 +414,7 @@ def fisherc(task=None,x=None,w=None):
 def knnm(task=None,x=None,w=None):
     "k-Nearest neighbor classifier"
     if not isinstance(task,str):
-        out = prmapping(knnm,task,x)
-        return out
+        return prmapping(knnm,task,x)
     if (task=='untrained'):
         # just return the name, and hyperparameters
         if x is None:
@@ -487,8 +483,7 @@ def parzenc(task=None,x=None,w=None):
 def naivebm(task=None,x=None,w=None):
     "Naive Bayes density estimate"
     if not isinstance(task,str):
-        out = prmapping(naivebm,task,x)
-        return out
+        return prmapping(naivebm,task,x)
     if (task=='untrained'):
         # just return the name, and hyperparameters
         if x is None:
@@ -525,8 +520,7 @@ def naivebc(task=None,x=None,w=None):
 def baggingc(task=None,x=None,w=None):
     "Bagging"
     if not isinstance(task,str):
-        out = prmapping(baggingc,task,x)
-        return out
+        return prmapping(baggingc,task,x)
     if (task=='untrained'):
         # just return the name, and hyperparameters
         if x is None:
@@ -557,7 +551,6 @@ def baggingc(task=None,x=None,w=None):
             pred = W[i](X)
             I = numpy.argmax(+pred,axis=1)
             out[J,I] += 1 
-
         return out
     else:
         print(task)
