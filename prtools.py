@@ -173,8 +173,9 @@ def testc(task=None,x=None,w=None):
     "Test classifier"
     if not isinstance(task,str):
         out = prmapping(testc)
-        out.labels = numpy.NaN
         out.mapping_type = "trained"
+        if task is not None:
+            out = out(task)
         return out
     if (task=='untrained'):
         # just return the name, and hyperparameters
