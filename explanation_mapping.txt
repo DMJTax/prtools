@@ -1,0 +1,144 @@
+How to use a mapping
+--------------------
+
+A mapping is defined to have a consistent interface to any
+dataset-processing operation. That can be a classifier (where a dataset
+is input, and class-posterior probabilities are output), a regressor
+(from dataset to real number), a data preprocessor (where a dataset is
+remapped to another dataset) or a performance measure (where from a dataset
+some final number(s) is derived).
+
+The idea of the mapping is that it is a generalisation of a matrix
+multiplication.  We can represent a dataset X with N samples,
+each having D features, by a data matrix of size NxD. A mapping can
+transform this data matrix and outputs, say, C new features per sample.
+In an abstract way we can obtain the output Y by:
+> Y = X*W
+The output dataset should have size NxC, and therefore the mapping W
+should have size DxC.
+
+In Matlab this was a very natural generalisation, because in Matlab
+everything is a matrix. In Python this does not really hold. In Python
+you can work with mappings in this matrix-multiplication (Matlab)
+way, or in the Python way. 
+
+Let's first look at the Python way:
+> from prtools import *   # Not nice, but reduces clutter in this example
+> import matplotlib.pyplot as plt
+> a = gendatb((30,30))    # Create dataset
+> w = parzenc()           # Define the mapping
+> w.train(a)              # Train a mapping
+> out = w.eval(a)         # Get mapped data
+> pred = labeld(out)      # Derive predicted labels
+> err = testc(out)        # ... and error
+
+Matlab way:
+> from prtools import *   # Not nice, but reduces clutter in this example
+> a = gendatb((30,30))    # Create dataset
+> w = parzenc(a)          # Train a mapping
+> out = a*w               # Get mapped data
+> pred = out*labeld()     # Derive predicted labels
+> err = out*testc()       # ... and error
+
+An important feature is that mappings can be concatenated into a
+sequential mapping. For instance, the data can first be rescaled to have
+unit variance (using scalem), and then classified by the Parzen
+classifier (using parzenc). In the Python way it is cumbersome:
+> w = sequentialm((scalem(),parzenc()))
+> w.train(a)
+In the Matlab way it becomes:
+> u = scalem()*parzenc()
+> w = a*u
+
+
+
+How to define your own prmapping
+--------------------------------
+
+To define a mapping, you have to define a new function. This function
+can have up to 3 different input parameters. Typically, the first input
+parameter ('task') is a text string, indicating what is expected from
+the function.
+The function should be able to answer to 4 different calls:
+
+1. task='untrained': this should return just the name, and some default
+hyperparameters if these are required,
+2. task='train': a dataset is given to the mapping, and the parameters of the
+mapping are fitted. The trained parameters, and the labels of the output
+features should be returned by the function
+3. task='eval': with the trained mapping and a new dataset, the output is
+computed. Typically this a data matrix.
+4. no explicit command: a direct call to the function is given. It is
+expected that the function will return a 'prmapping'.
+
+
+A most simple example is given here:
+
+def scalem(task=None,x=None,w=None):
+    "Scale mapping"
+    if not isinstance(task,str):
+        # Define a prmapping with this function, and where the variable
+        # task potentially contains the hyperparameters
+        return prmapping(scalem,task)
+    if (task=='untrained'):
+        # Just return the name, and hyperparameters
+        # For this example no hyperparameters are needed.
+        return 'Scalem', ()
+    elif (task=="train"):
+        # Now the mapping is trained using input data x.
+        # Possible hyperparameters are given in variable w.
+        mn = numpy.mean(+x,axis=0)
+        sc = numpy.std(+x,axis=0)
+        # and the parameters, and feature labels, are returned:
+        return (mn,sc), x.featlab
+    elif (task=="eval"):
+        # We are applying to new data. The variable w contains the
+        # trained mapping, and you can get anything you may need from it
+        # (like trained parameters in w.data, hyperparameters in
+        # w.hyperparam, feature labels in w.labels, etc)
+        W = w.data   # get the parameters out
+        x = +x-W[0]
+        x = +x/W[1]
+        return x
+    else:
+        # If you are paranoid, you may want to catch the left-overs:
+        print(task)
+        raise ValueError('This task is *not* defined for scalem.')
+
+
+You can also define *fixed* mappings. That are mappings for which no
+training is required. An example is given below:
+
+
+def softmax(task=None,x=None,w=None):
+    "Softmax mapping"
+    if not isinstance(task,str):
+        out = prmapping(softmax)
+        out.mapping_type = "trained"
+        if task is not None:
+            out = out(task)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'Softmax', ()
+    elif (task=="train"):
+        print("Softmax: We cannot train the softmax mapping.")
+        return 0, x.featlab
+    elif (task=="eval"):
+        # we are applying to new data
+        dat = numpy.exp(+x)
+        sumx = numpy.sum(dat,axis=1,keepdims=True)
+        return dat/sumx
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for softmax.')
+
+There are also situations in which the output of a mapping is not a
+dataset anymore. This happens for instance in testc(). The function
+testc() should just return a single value (the classification error).
+For these situations you can still define a prmapping, but you should
+*not* define feature labels for the output during training.  In the
+example of scalem() above, you should replace the x.featlab with ().
+When no feature labels are defined in a mapping, the output will be the
+raw output of the mapping function, and it will not be cast to a
+prdataset.
