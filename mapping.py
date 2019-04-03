@@ -101,14 +101,14 @@ class prmapping(object):
             print(self.labels)
             print(len(self.labels))
             raise ValueError('Output of mapping does not match number of labels.')
-        if isinstance(x,prdataset):
-            newx.setdata(+out)
-        else:
-            newx = out
         if (len(self.labels)>0):
             if not isinstance(x,prdataset):
                 newx = prdataset(newx)
             newx.featlab = self.labels
+        if isinstance(x,prdataset) and (len(self.labels)>0):
+            newx.setdata(+out)
+        else:
+            newx = out
         return newx
 
     def __call__(self,x):
@@ -144,6 +144,9 @@ class prmapping(object):
 
     def __rmul__(self,other):
         if (isinstance(other,prdataset)):
+            #print('prmapping multiplication with left')
+            #print('   self='+str(self))
+            #print('   other='+str(other))
             newself = copy.deepcopy(self)
             return newself(other)
         else:
