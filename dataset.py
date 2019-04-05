@@ -205,8 +205,9 @@ class prdataset(object):
         if labelname in self._labelnames_:
             # probably overwrite it:
             I = self._labelnames_.index(labelname)
-            self._labels_[:,I] = labels
+            self._labels_[:,I:(I+1)] = labels
         else:
+            print(len(self._labelnames_))
             # add a new label:
             if (len(self._labelnames_)>0):
                 self._labelnames_.append(labelname)

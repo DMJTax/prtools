@@ -186,8 +186,9 @@ def testc(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are classifying new data
         err = (labeld(x) != x.labels)*1.
-        if (len(x.weights)>0):
-            err *= x.weights
+        w = x.getlabels('weights')
+        if w is not None:
+            err *= w
         return numpy.mean(err)
     else:
         print(task)
@@ -570,7 +571,7 @@ def stumpc(task=None,x=None,w=None):
             raise ValueError('Stumpc can only deal with 2 classes.')
         # allow weights:
         n,dim = x.shape
-        w = x.weights
+        w = x.getlabels('weights')
         if (len(w)==0):
             w = numpy.ones((n,1))
         w /= numpy.sum(w)
@@ -667,7 +668,7 @@ def adaboostc(task=None,x=None,w=None):
         alpha = numpy.zeros((T,1))
         for t in range(T):
             #print("Iteration %d in Adaboost" % t)
-            x.weights = w
+            x.setlabels('weights',w)
             tmp.data, ll = stumpc('train',x)
             h[t,0],h[t,1],h[t,2] = tmp.data
             #print('  -> Feature %d, with threshold %f and sign %d'% (h[t,0],h[t,1],h[t,2]))
