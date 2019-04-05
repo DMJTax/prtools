@@ -33,7 +33,8 @@ class prdataset(object):
         self.featlab = numpy.arange(data.shape[1])
         self.setdata(data)
         self.labels = labels
-        self.weights = []
+        self._labelnames_ = ()
+        self._labels_ = []
         self.prior = []
         self.user = []
 
@@ -150,6 +151,7 @@ class prdataset(object):
 
     def __getitem__(self,key):
         newd = copy.deepcopy(self)
+        # deep magic with indices:
         k1 = key[0]
         k2 = key[1]
         if isinstance(k1,int):  # fucking python!
@@ -157,12 +159,17 @@ class prdataset(object):
         if isinstance(k2,int):  # fucking python!!!!
             k2 = range(k2,k2+1)
         newkey = (k1,k2)
+        # select columns of feature labels
         newfeatlab = newd.featlab[key[1]]
         if not isinstance(newfeatlab,numpy.ndarray): #DXD why??
             newfeatlab = numpy.array([newfeatlab]) # GRR Python
         newd.featlab = newfeatlab
+        # select rows/columns from dataset:
         newd = newd.setdata(newd.data[newkey])
+        # select rows from labels
         newd.labels = newd.labels[newkey[0]]
+        # select rows from labels
+        newd._labels_ = newd._labels_[newkey[0]]
         return newd
 
     def seldat(self,cl):
@@ -181,7 +188,57 @@ class prdataset(object):
         out = copy.deepcopy(self)
         out = out.setdata(numpy.concatenate((out.data,other.data),axis=0))
         out.labels = numpy.concatenate((out.labels,other.labels),axis=0)
+        out._labels_ = numpy.concatenate((out._labels_,other._labels_),axis=0)
         return out
+
+    def setlabels(self,labelname,labels):
+        # does the size match?
+        if (len(labels.shape)==1):
+            labels = labels[:,numpy.newaxis]
+        if (labels.shape[0] != self.data.shape[0]):
+            # try transposing:
+            labels = labels.transpose()
+            if (labels.shape[0] != self.data.shape[0]):
+                raise ValueError("Number of labels does not match number of objects.")
+
+        # does labelname already exist?
+        if labelname in self._labelnames_:
+            # probably overwrite it:
+            I = self._labelnames_.index(labelname)
+            self._labels_[:,I] = labels
+        else:
+            # add a new label:
+            if (len(self._labelnames_)>0):
+                self._labelnames_.append(labelname)
+                self._labels_ = numpy.append(self._labels_,labels,1)
+            else:
+                if not isinstance(labelname,list):
+                    labelname = [labelname]
+                self._labelnames_ = labelname
+                self._labels_ = labels
+
+    def getlabels(self,labelname):
+        if labelname in self._labelnames_:
+            I = self._labelnames_.index(labelname)
+            return self._labels_[:,I:(I+1)]
+        else:
+            return None
+
+    def showlabels(self,I=None):
+        if I is None:
+            if (len(self._labelnames_)>0):
+                print("This dataset has these labels defined:"),
+                print(self._labelnames_)
+            else:
+                print("No labels defined.")
+        else:
+            labels = self.getlabels(I)
+            if I is None:
+                print("Cannot find labels ", I)
+            else:
+                print(labels)
+
+
 
 
 
