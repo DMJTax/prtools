@@ -169,7 +169,8 @@ class prdataset(object):
         # select rows from labels
         newd.labels = newd.labels[newkey[0]]
         # select rows from labels
-        newd._labels_ = newd._labels_[newkey[0]]
+        if (len(newd._labels_)>0):
+            newd._labels_ = newd._labels_[newkey[0],:]
         return newd
 
     def seldat(self,cl):
@@ -200,7 +201,6 @@ class prdataset(object):
             labels = labels.transpose()
             if (labels.shape[0] != self.data.shape[0]):
                 raise ValueError("Number of labels does not match number of objects.")
-
         # does labelname already exist?
         if labelname in self._labelnames_:
             # probably overwrite it:
