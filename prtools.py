@@ -721,6 +721,9 @@ def svc(task=None,x=None,w=None):
             x = x[1]
         if (kernel=='linear'):
             clf = svm.SVC(kernel='linear',degree=x,C=C,probability=True)
+        elif (kernel=='poly'):
+            clf = svm.SVC(kernel='poly',degree=x,gamma='auto',coef0=1.,C=C,probability=True)
+            #clf = svm.SVC(kernel='poly',gamma=x,C=C,probability=True)
         else:
             clf = svm.SVC(kernel='rbf',gamma=x,C=C,probability=True)
         return 'Support vector classifier', clf
