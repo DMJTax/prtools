@@ -319,10 +319,10 @@ def gaussm(task=None,x=None,w=None):
         for i in range(c):
             df = X - W[1][i,:]
             if (dim>1):
-                out[:,i] = W[0][i] * numpy.sum(numpy.dot(df,W[2][i,:,:])*df,axis=1)
+                out[:,i] = numpy.sum(numpy.dot(df,W[2][i,:,:])*df,axis=1)
             else:
-                out[:,i] = W[0][i] * numpy.dot(df,W[2][i,:,:])*df
-            out[:,i] = numpy.exp(-out[:,i]/2)/W[3][i]
+                out[:,i] = numpy.dot(df,W[2][i,:,:])*df
+            out[:,i] = W[0][i] * numpy.exp(-out[:,i]/2)/W[3][i]
         return out
     else:
         print(task)
@@ -517,6 +517,103 @@ def naivebm(task=None,x=None,w=None):
 
 def naivebc(task=None,x=None,w=None):
     return naivebm(task,x,w)*bayesrule()
+
+def mog(task=None,x=None,w=None):
+    "Mixture of Gaussians mapping"
+    if not isinstance(task,str):
+        return prmapping(mog,task,x)
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = (3,'full',0.01)  # default: k=3, full cov., small reg.
+        return 'mog', x
+    elif (task=="train"):
+        # we are going to train the mapping
+        # some basic checking:
+        n,dim = x.shape
+        k = w[0]
+        ctype = w[1]
+        reg = w[2]
+        if (k>n):
+            raise ValueError('More clusters than datapoints requested.')
+        # some basic inits:
+        nriters = 100  #DXD
+        iter = 0
+        LL1 = -2e6
+        LL2 = -1e6
+        # initialize the priors, means, cov. matrices
+        iZ = (2*numpy.pi)**(-dim/2)
+        covwidth = numpy.mean(numpy.diag(numpy.cov(+x)))
+        largeval = 10.
+        pr = numpy.ones((k,1))/k
+        I = numpy.random.permutation(range(n))
+        mn = +x[I[:k],:]
+        cv = numpy.zeros((dim,dim,k))
+        for i in range(k):
+            cv[:,:,i] = numpy.eye(dim)*covwidth*largeval
+        # now run the iterations
+        P = numpy.zeros((n,k))
+        while (abs(LL2/LL1 - 1.)>1e-6) and (iter<nriters):
+            #print("Iteration %d:"%iter)
+            # compute densities
+            for i in range(k):
+                df = +x - mn[i,:]
+                icv = numpy.linalg.inv(cv[:,:,i])
+                if (dim>1):
+                    P[:,i] = numpy.sum(numpy.dot(df,icv)*df,axis=1)
+                else:
+                    P[:,i] = numpy.dot(df,icv)*df
+                P[:,i] = pr[i]*iZ* numpy.exp(-P[:,i]/2.)\
+                        *numpy.sqrt(numpy.linalg.det(icv))
+            # next iteration
+            iter += 1
+            LL2 = LL1
+            LL1 = numpy.sum(numpy.log(numpy.sum(P,axis=1)))
+            # compute responsibilities
+            sumP = numpy.sum(P,axis=1,keepdims=True)
+            sumP[sumP==0.] = 1.
+            resp = P/sumP
+            Nk = numpy.sum(resp,axis=0)
+            # re-estimate the parameters:
+            for i in range(k):
+                gamma = numpy.tile(resp[:,i:(i+1)],(1,dim))
+                mn[i,:] = numpy.sum(+x * gamma, axis=0,keepdims=True) / Nk[i]
+                df = +x - mn[i,:]
+                cv[:,:,i] = numpy.dot(df.T,df*gamma) / Nk[i] \
+                        + reg*numpy.diag(numpy.ones((dim,1)))
+                if (ctype=='diag'):
+                    cv[:,:,i] = numpy.diag(numpy.diag(cv[:,:,i]))
+                elif (ctype=='sphr'):
+                    s = numpy.mean(numpy.diag(cv[:,:,i]))
+                    cv[:,:,i] = s * numpy.diagflat(numpy.ones((dim,1)))
+                pr[i] = Nk[i]/n
+            # next!
+
+        # precompute the inverses and normalisation constants
+        Z = numpy.zeros((k,1))
+        for i in range(k):
+            cv[:,:,i] = numpy.linalg.inv(cv[:,:,i])
+            Z[i] = iZ*numpy.linalg.det(cv[:,:,i])
+
+        # return the parameters, and feature labels
+        return (pr,mn,cv,Z), range(k)  # output p(x|k) per component
+    elif (task=="eval"):
+        # we are applying to new data
+        W = w.data   # get the parameters out
+        n,dim = x.shape
+        k = W[1].shape[0]
+        out = numpy.zeros((n,k))
+        for i in range(k):
+            df = +x - W[1][i,:]
+            if (dim>1):
+                out[:,i] = numpy.sum(numpy.dot(df,W[2][:,:,i])*df,axis=1)
+            else:
+                out[:,i] = numpy.dot(df,W[2][:,:,i])*df
+            out[:,i] = W[0][i]*numpy.exp(-out[:,i]/2.)/W[3][i]
+        return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for mog.')
 
 def baggingc(task=None,x=None,w=None):
     "Bagging"
