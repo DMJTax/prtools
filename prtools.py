@@ -615,6 +615,44 @@ def mog(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for mog.')
 
+def mogm(task=None,x=None,w=None):
+    "Mixture of Gaussians mapping"
+    if not isinstance(task,str):
+        return prmapping(mogm,task,x)
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = (2,'full',0.01)  # default: k=3, full cov., small reg.
+        return 'mogm', x
+    elif (task=="train"):
+        # we are going to train the mapping
+        # Train a mapping per class:
+        c = x.nrclasses()
+        g = []
+        for i in range(c):
+            xi = x.seldat(i)
+            g.append(mog(xi,w))
+
+        # return the parameters, and feature labels
+        return g, x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        W = w.data   # get the parameters out
+        n,dim = x.shape
+        if not isinstance(x,prdataset):
+            x = prdataset(x)
+        k = len(W)
+        out = numpy.zeros((n,k))
+        for i in range(k):
+            out[:,i] = numpy.sum(+(x*W[i]),axis=1)
+        return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for mogm.')
+
+def mogc(task=None,x=None,w=None):
+    return mogm(task,x,w)*bayesrule()
+
 def baggingc(task=None,x=None,w=None):
     "Bagging"
     if not isinstance(task,str):
