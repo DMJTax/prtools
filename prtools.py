@@ -960,6 +960,38 @@ def sqeucldist(a,b):
             D[i,j] = numpy.dot(df.T,df)
     return D
 
+def prcrossval(a,u,k=10,nrrep=1):
+    n = a.shape[0]
+    c = a.nrclasses()
+    if (nrrep==1):
+        # check:
+        clsz = a.classsizes()
+        if (min(clsz)<k):
+            raise ErrorValue('Some classes are too small for the number of folds.')
+        err = numpy.zeros((k,1))
+        # randomize the data
+        I = numpy.random.permutation(range(n))
+        a = a[I,:]
+        # now split in folds for stratified crossval
+        I = numpy.zeros((n,1))
+        for i in range(c):
+            J = (a.nlab()==i).nonzero()
+            foldnr = numpy.mod(range(clsz[i]),k)
+            I[J] = foldnr
+        # go!
+        e = numpy.zeros((k,1))
+        for i in range(k):
+            J = (I!=i).nonzero()
+            xtr = a[J[0],:]
+            w = xtr*u
+            J = (I==i).nonzero()
+            e[i] = a[J[0],:]*w*testc()
+    else:
+        e = numpy.zeros((k,nrrep))
+        for i in range(nrrep):
+            e[:,i:(i+1)] = prcrossval(a,u,k,1)
+    return e
+
 def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=3):
     nrcl = a.nrclasses()
     clsz = a.classsizes()
