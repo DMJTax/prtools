@@ -161,8 +161,8 @@ class prdataset(object):
         newkey = (k1,k2)
         # select columns of feature labels
         newfeatlab = newd.featlab[key[1]]
-        if not isinstance(newfeatlab,numpy.ndarray): #DXD why??
-            newfeatlab = numpy.array([newfeatlab]) # GRR Python
+        #if not isinstance(newfeatlab,numpy.ndarray): #DXD why??
+        #    newfeatlab = numpy.array([newfeatlab]) # GRR Python
         newd.featlab = newfeatlab
         # select rows/columns from dataset:
         newd = newd.setdata(newd.data[newkey])
@@ -175,7 +175,6 @@ class prdataset(object):
 
     def seldat(self,cl):
         newd = copy.deepcopy(self)
-        #I = (self.labels==cl).nonzero()
         I = (self.nlab()==cl).nonzero()
         return newd[I[0],:]   # grr, this python..
 
