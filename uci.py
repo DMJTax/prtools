@@ -28,14 +28,40 @@ def getUCIdata(name,N,dim,getOnline=False):
     a = dataset.prdataset(x,labx)
     return a
 
+def missingvalues(a,val):
+    if isinstance(val,str):
+        if (val=='remove'):
+            suma = numpy.sum(+a,axis=1)
+            I = numpy.nonzero(~numpy.isnan(suma))
+            a = a[I[0],:]
+        elif (val=='mean'):
+            dat = +a
+            suma = numpy.sum(dat,axis=0)
+            I = numpy.nonzero(numpy.isnan(suma))[0]
+            for i in range(len(I)):
+                feata = +a[:,I[i]]
+                J = numpy.nonzero(numpy.isnan(feata))
+                dat[J,I[i]] = numpy.nanmean(feata)
+            a.data = dat
+    return a
+
 def arrythmia(getOnline=False):
-    a = getUCIdata("arrhythmia",452,279,True)
+    a = getUCIdata("arrhythmia",452,279,getOnline)
     a.name = 'Arrythmia'
     return a
 
 def iris(getOnline=False):
-    a = getUCIdata("iris",150,4)
+    a = getUCIdata("iris",150,4,getOnline)
     a.featlab = ['sepal length','sepal width','petal length','petal width']
     a.name = 'Iris'
     return a
 
+def breast(getOnline=False):
+    a = getUCIdata("breast-cancer-wisconsin",699,10,getOnline)
+    a.featlab = [ "Sample code number", "Clump Thickness",
+            "Uniformity of Cell Size", "Uniformity of Cell Shape",
+            "Marginal Adhesion", "Single Epithelial Cell Size",
+            "Bare Nuclei", "Bland Chromatin", "Normal Nucleoli", "Mitoses"]
+    a.name = 'Breast'
+    a = a[:,1:]
+    return a
