@@ -172,6 +172,8 @@ class prdataset(object):
         if (len(newd._labels_)>0):
             newd._labels_ = newd._labels_[newkey[0],:]
         return newd
+    def __setitem__(self,key,item):
+        self.data[key] = item
 
     def seldat(self,cl):
         newd = copy.deepcopy(self)
