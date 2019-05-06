@@ -962,7 +962,7 @@ def sqeucldist(a,b):
             D[i,j] = numpy.dot(df.T,df)
     return D
 
-def prcrossval(a,u,k=10,nrrep=1):
+def prcrossval(a,u,k=10,nrrep=1,testfunc=testc):
     n = a.shape[0]
     c = a.nrclasses()
     if (nrrep==1):
@@ -987,14 +987,14 @@ def prcrossval(a,u,k=10,nrrep=1):
             xtr = a[J[0],:]
             w = xtr*u
             J = (I==i).nonzero()
-            e[i] = a[J[0],:]*w*testc()
+            e[i] = a[J[0],:]*w*testfunc()
     else:
         e = numpy.zeros((k,nrrep))
         for i in range(nrrep):
             e[:,i:(i+1)] = prcrossval(a,u,k,1)
     return e
 
-def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=3):
+def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=3,testfunc=testc):
     nrcl = a.nrclasses()
     clsz = a.classsizes()
     if (numpy.max(trainsize)>=numpy.min(clsz)):
@@ -1008,8 +1008,8 @@ def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=3):
             sz = trainsize[i]*numpy.ones((1,nrcl))
             x,z = gendat(a, sz[0],seed=f)
             w = x*u
-            err[i,f] = z*w*testc()
-            err_app[i,f] = x*w*testc()
+            err[i,f] = z*w*testfunc()
+            err_app[i,f] = x*w*testfunc()
     # show it?
     h = plt.errorbar(trainsize,numpy.mean(err,axis=1),numpy.std(err,axis=1),\
             label=u.name)
@@ -1021,7 +1021,7 @@ def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=3):
     plt.title('Learning curve %s' % a.name)
     return err, err_app
 
-def clevalf(a,u,trainsize=0.6,nrreps=5):
+def clevalf(a,u,trainsize=0.6,nrreps=5,testfunc=testc):
     dim = a.shape[1]
     err = numpy.zeros((dim,nrreps))
     err_app = numpy.zeros((dim,nrreps))
@@ -1029,8 +1029,8 @@ def clevalf(a,u,trainsize=0.6,nrreps=5):
         for i in range(1,dim):
             x,z = gendat(a[:,:i], trainsize,seed=f)
             w = x*u
-            err[i,f] = z*w*testc()
-            err_app[i,f] = x*w*testc()
+            err[i,f] = z*w*testfunc()
+            err_app[i,f] = x*w*testfunc()
     # show it?
     h = plt.errorbar(range(dim),numpy.mean(err,axis=1),numpy.std(err,axis=1),\
             label=u.name)
@@ -1204,7 +1204,7 @@ def testr(task=None,x=None,w=None):
         return numpy.mean(err)
     else:
         print(task)
-        raise ValueError('This task is *not* defined for testc.')
+        raise ValueError('This task is *not* defined for testr.')
 
 def gendats(n,dim=2,delta=2.):
     prior = [0.5,0.5]
