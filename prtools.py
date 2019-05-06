@@ -8,10 +8,11 @@ import matplotlib.pyplot as plt
 import copy
 from sklearn import svm
 from sklearn import tree
+from sklearn import linear_model
 
 from mapping import prmapping,sequentialm,plotc,plotm
 from dataset import prdataset, genclass,genlab,gendat,scatterd
-
+from uci import iris
 
 # === mappings ===============================
 
@@ -930,6 +931,7 @@ def pcam(task=None,x=None,w=None):
         else:
             pcadim = w
         # get eigenvalues and eigenvectors
+        print(x)
         C = numpy.cov(+x,rowvar=False)
         l,v = numpy.linalg.eig(C)
         # sort it:
@@ -1151,6 +1153,58 @@ def kernelr(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for kernelr.')
 
+def lassor(task=None,x=None,w=None):
+    "LASSO regression"
+    if not isinstance(task,str):
+        out = prmapping(lassor,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = 1.
+        # use the sklearn implementation:
+        regr = linear_model.Lasso(alpha=x)
+        return 'LASSO regression', regr
+    elif (task=="train"):
+        X = +x
+        y = x.labels
+        regr = copy.deepcopy(w)
+        regr.fit(X,y)
+        return regr,['target']
+    elif (task=="eval"):
+        # we are applying to new data
+        regr = w.data
+        out = regr.predict(+x)
+        out = out[:,numpy.newaxis]  # Pfff... Python...
+        return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for lassor.')
+
+def testr(task=None,x=None,w=None):
+    "Test regressor"
+    if not isinstance(task,str):
+        out = prmapping(testr)
+        out.mapping_type = "trained"
+        if task is not None:
+            out = out(task)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        return 'Test regressor', ()
+    elif (task=="train"):
+        # nothing to train
+        return None,0
+    elif (task=="eval"):
+        # we are comparing the output with the targets
+        err = (+x - x.labels)**2.
+        w = x.getlabels('weights')
+        if w is not None:
+            err *= w
+        return numpy.mean(err)
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for testc.')
 
 def gendats(n,dim=2,delta=2.):
     prior = [0.5,0.5]
