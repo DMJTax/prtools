@@ -27,6 +27,8 @@ class prdataset(object):
                 raise ValueError('Label vector should be a numpy matrix.')
             if (data.shape[0]!=labels.shape[0]):
                 raise ValueError('Number of labels does not match number of data samples.')
+            if (len(labels.shape)<2):
+                labels = labels[:,numpy.newaxis]  # SIGH
         else:
             labels = numpy.zeros(data.shape[0])
         self.name = ''
