@@ -21,7 +21,12 @@ def getUCIdata(name,N,dim,getOnline=False):
                 x[i,j] = float(nr[j])
             except:
                 x[i,j] = numpy.nan
-        labx[i] = nr[dim]
+        # finally get the label:
+        thislab = nr[dim].rstrip()
+        try:
+            labx[i] = float(thislab)
+        except:
+            labx[i] = thislab
         i += 1
         if (i>=N):
             break
@@ -43,6 +48,11 @@ def missingvalues(a,val):
                 J = numpy.nonzero(numpy.isnan(feata))
                 dat[J,I[i]] = numpy.nanmean(feata)
             a.data = dat
+    return a
+
+def ionosphere(getOnline=False):
+    a = getUCIdata("ionosphere",351,34,getOnline)
+    a.name = 'Ionosphere'
     return a
 
 def arrythmia(getOnline=False):
