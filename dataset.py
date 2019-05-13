@@ -292,7 +292,7 @@ def genclass(n,p):
 
 def genlab(n,lab):
     if (len(n)!=len(lab)):
-        raise ErrorValue('Number of values in N should match number in lab')
+        raise ValueError('Number of values in N should match number in lab')
     out = numpy.tile(lab[0],[n[0],1])
     for i in range(1,len(n)):
         out=numpy.concatenate((out,numpy.tile(lab[i],[n[i],1])))
