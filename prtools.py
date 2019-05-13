@@ -27,6 +27,8 @@ def scalem(task=None,x=None,w=None):
         # we are going to train the mapping
         mn = numpy.mean(+x,axis=0)
         sc = numpy.std(+x,axis=0)
+        # should I complain about standard deviations of zero?
+        sc[sc==0.] = 1.
         # return the parameters, and feature labels
         return (mn,sc), x.featlab
     elif (task=="eval"):
@@ -162,9 +164,12 @@ def labeld(task=None,x=None,w=None):
         # we are applying to new data
         I = numpy.argmax(+x,axis=1)
         n = x.shape[0]
-        out = numpy.zeros((n,1))
+        # complex way to deal with both number and string labels:
+        out = []
         for i in range(n):
-            out[i] = x.featlab[I[i]]
+            out.append(x.featlab[I[i]])
+        out = numpy.array(out)
+        out = out[:,numpy.newaxis]
         return out
     else:
         print(task)
@@ -1233,7 +1238,7 @@ def gendatd(n,dim=2,d1=2.,d2=1.):
     out.prior = prior
     return out
 
-def gendatb(n,s=1.0):
+def gendatb(n=(50,50),s=1.0):
     r = 5
     prior = [0.5,0.5]
     N = genclass(n,prior)
