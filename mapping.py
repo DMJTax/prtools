@@ -47,7 +47,7 @@ class prmapping(object):
         if I is not None:
             if (I==0):
                 return self.shape[0]
-            elif (dim==1):
+            elif (I==1):
                 return self.shape[1]
             else:
                 raise ValueError('Only dim=0,1 are possible.')
