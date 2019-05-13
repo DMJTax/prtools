@@ -258,7 +258,7 @@ def bayesrule(task=None,x=None,w=None):
         else:
             dat = x.data
         Z = numpy.sum(dat,axis=1,keepdims=True)
-        out = dat/Z
+        out = dat/(Z+1e-10)  # Or what to do here? What is eps?
         x = x.setdata(out)
         return x
     else:
@@ -987,6 +987,7 @@ def prcrossval(a,u,k=10,nrrep=1,testfunc=testc):
     else:
         e = numpy.zeros((k,nrrep))
         for i in range(nrrep):
+            #print("PRcrossval: iteration %d." % i)
             e[:,i:(i+1)] = prcrossval(a,u,k,1)
     return e
 
@@ -999,7 +1000,7 @@ def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=3,testfunc=testc):
     err = numpy.zeros((N,nrreps))
     err_app = numpy.zeros((N,nrreps))
     for f in range(nrreps):
-        print("Iteration %d." % f)
+        #print("Cleval: iteration %d." % f)
         for i in range(N):
             sz = trainsize[i]*numpy.ones((1,nrcl))
             x,z = gendat(a, sz[0],seed=f)
@@ -1022,6 +1023,7 @@ def clevalf(a,u,trainsize=0.6,nrreps=5,testfunc=testc):
     err = numpy.zeros((dim,nrreps))
     err_app = numpy.zeros((dim,nrreps))
     for f in range(nrreps):
+        #print("Clevalf: iteration %d." % f)
         for i in range(1,dim):
             x,z = gendat(a[:,:i], trainsize,seed=f)
             w = x*u
