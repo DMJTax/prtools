@@ -23,7 +23,7 @@ or
 ```
 > w = u.train(a)
 ```
-all steps in the sequence is trained. And in the evaluation on new data, like:
+all steps in the sequence are trained. And in the evaluation on new data, like:
 ```
 > pred = w(b)
 ```
