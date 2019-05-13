@@ -791,10 +791,7 @@ def adaboostc(task=None,x=None,w=None):
         # setup vars
         T = w[0]
         N = x.shape[0]
-        # find the 'first' class in the dataset: that will be the first output
-        # of the decision stump, and that will be easy to retrieve. We will make
-        # that the positive class
-        Iclass1 = x.lablist()[0]
+        
         y = 1 - 2*x.nlab()
         h = numpy.zeros((T,3))
 
@@ -969,8 +966,7 @@ def prcrossval(a,u,k=10,nrrep=1,testfunc=testc):
         # check:
         clsz = a.classsizes()
         if (min(clsz)<k):
-            raise ErrorValue('Some classes are too small for the number of folds.')
-        err = numpy.zeros((k,1))
+            raise ValueError('Some classes are too small for the number of folds.')
         # randomize the data
         I = numpy.random.permutation(range(n))
         a = a[I,:]
@@ -1091,7 +1087,6 @@ def linearr(task=None,x=None,w=None):
         return beta,['target']
     elif (task=="eval"):
         # we are applying to new data
-        n = x.shape[0]
         dat = +vandermondem(prdataset(x),w.hyperparam)
         return dat.dot(w.data)
     else:
@@ -1144,7 +1139,6 @@ def kernelr(task=None,x=None,w=None):
         X = W[0]
         y = W[1]
         gamma = -1/(w.hyperparam*w.hyperparam)
-        n = x.shape[0]
         K = numpy.exp(gamma*sqeucldist(+x,X))
         out = K.dot(y)
         out = out/numpy.sum(K,axis=1,keepdims=True)
