@@ -1,5 +1,6 @@
 # prtools
 Prtools for Python
+==================
 
 This is a bare-bones implementation of Prtools for Python. It includes the 
 prdataset and prmapping objects. The main advantages are:
@@ -41,5 +42,16 @@ be done by the commands:
 > plotc(w)
 ```
 
+Mapping
+=======
+
+To define a mapping, you need to define three things:
+1. 'untrained' mapping: here you define the name, and possibly the
+   hyperparameters of the mapping
+2. 'train' the mapping: here you train the mapping parameters, given a
+   dataset and possibly its hyperparameters. The output should be the
+   trained parameters, and the names of the output features
+3. 'eval' the mapping: given a dataset, and the trained mapping, the
+   output for the given dataset should be computed.
 
 
