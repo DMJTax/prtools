@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 class prdataset(object):
     "Prdataset in python"
 
-    def __init__(self,data,labels=None):
+    def __init__(self,data,targets=None):
         if isinstance(data,prdataset):
             #self = copy.deepcopy(data) # why does this not work??
             self.__dict__ = data.__dict__.copy()   # sigh..
@@ -22,21 +22,21 @@ class prdataset(object):
             data = numpy.array(data,ndmin=2)
             if not isinstance(data,(numpy.ndarray, numpy.generic)):
                 raise ValueError('Data matrix should be a numpy matrix.')
-        if labels is not None:
-            if not isinstance(labels,(numpy.ndarray, numpy.generic)):
+        if targets is not None:
+            if not isinstance(targets,(numpy.ndarray, numpy.generic)):
                 raise ValueError('Label vector should be a numpy matrix.')
-            if (data.shape[0]!=labels.shape[0]):
-                raise ValueError('Number of labels does not match number of data samples.')
-            if (len(labels.shape)<2):
-                labels = labels[:,numpy.newaxis]  # SIGH
+            if (data.shape[0]!=targets.shape[0]):
+                raise ValueError('Number of targets does not match number of data samples.')
+            if (len(targets.shape)<2):
+                targets = targets[:,numpy.newaxis]  # SIGH
         else:
-            labels = numpy.zeros(data.shape[0])
+            targets = numpy.zeros(data.shape[0])
         self.name = ''
         self.featlab = numpy.arange(data.shape[1])
         self.setdata(data)
-        self.labels = labels
-        self._labelnames_ = ()
-        self._labels_ = []
+        self.targets = targets
+        self._targetnames_ = ()
+        self._targets_ = []
         self.prior = []
         self.user = []
 
@@ -49,7 +49,7 @@ class prdataset(object):
         cnt = self.classsizes()
         nrcl = len(cnt)
         if (nrcl==0):
-            outstr += " with no labels"
+            outstr += " with no targets"
         elif (nrcl==1):
             outstr += " with 1 class: [%d]"%sz[0]
         else:
@@ -109,9 +109,9 @@ class prdataset(object):
         return newd
 
     def lablist(self):
-        return numpy.unique(self.labels)
+        return numpy.unique(self.targets)
     def nlab(self):
-        (ll,I) = numpy.unique(self.labels,return_inverse=True)
+        (ll,I) = numpy.unique(self.targets,return_inverse=True)
         I = numpy.array(I)
         I = I[:,numpy.newaxis] # python is so terrible..:-(
         return I
@@ -136,18 +136,18 @@ class prdataset(object):
 
     def classsizes(self):
         try:       # in older versions of numpy the 'count' is not available
-            (k,count) = numpy.unique(self.labels,return_counts=True)
+            (k,count) = numpy.unique(self.targets,return_counts=True)
         except:
-            ll = numpy.unique(self.labels)
+            ll = numpy.unique(self.targets)
             count = numpy.zeros((len(ll),1))
             for i in range(len(ll)):
-                count[i] = numpy.sum(1.*(self.labels==ll[i]))
+                count[i] = numpy.sum(1.*(self.targets==ll[i]))
         return count
     def nrclasses(self):
-        ll = numpy.unique(self.labels)
+        ll = numpy.unique(self.targets)
         return len(ll)
     def findclass(self,cname):
-        ll = numpy.unique(self.labels)
+        ll = numpy.unique(self.targets)
         I = numpy.where(ll==cname)
         return I[0][0]
 
@@ -161,18 +161,18 @@ class prdataset(object):
         if isinstance(k2,int):  # fucking python!!!!
             k2 = range(k2,k2+1)
         newkey = (k1,k2)
-        # select columns of feature labels
+        # select columns of feature targets
         newfeatlab = newd.featlab[key[1]]
         #if not isinstance(newfeatlab,numpy.ndarray): #DXD why??
         #    newfeatlab = numpy.array([newfeatlab]) # GRR Python
         newd.featlab = newfeatlab
         # select rows/columns from dataset:
         newd = newd.setdata(newd.data[newkey])
-        # select rows from labels
-        newd.labels = newd.labels[newkey[0]]
-        # select rows from labels
-        if (len(newd._labels_)>0):
-            newd._labels_ = newd._labels_[newkey[0],:]
+        # select rows from targets
+        newd.targets = newd.targets[newkey[0]]
+        # select rows from targets
+        if (len(newd._targets_)>0):
+            newd._targets_ = newd._targets_[newkey[0],:]
         return newd
     def __setitem__(self,key,item):
         self.data[key] = item
@@ -191,55 +191,55 @@ class prdataset(object):
     def concatenate(self,other):
         out = copy.deepcopy(self)
         out = out.setdata(numpy.concatenate((out.data,other.data),axis=0))
-        out.labels = numpy.concatenate((out.labels,other.labels),axis=0)
-        out._labels_ = numpy.concatenate((out._labels_,other._labels_),axis=0)
+        out.targets = numpy.concatenate((out.targets,other.targets),axis=0)
+        out._targets_ = numpy.concatenate((out._targets_,other._targets_),axis=0)
         return out
 
-    def setlabels(self,labelname,labels):
+    def settargets(self,labelname,targets):
         # does the size match?
-        if (len(labels.shape)==1):
-            labels = labels[:,numpy.newaxis]
-        if (labels.shape[0] != self.data.shape[0]):
+        if (len(targets.shape)==1):
+            targets = targets[:,numpy.newaxis]
+        if (targets.shape[0] != self.data.shape[0]):
             # try transposing:
-            labels = labels.transpose()
-            if (labels.shape[0] != self.data.shape[0]):
-                raise ValueError("Number of labels does not match number of objects.")
+            targets = targets.transpose()
+            if (targets.shape[0] != self.data.shape[0]):
+                raise ValueError("Number of targets does not match number of objects.")
         # does labelname already exist?
-        if labelname in self._labelnames_:
+        if labelname in self._targetnames_:
             # probably overwrite it:
-            I = self._labelnames_.index(labelname)
-            self._labels_[:,I:(I+1)] = labels
+            I = self._targetnames_.index(labelname)
+            self._targets_[:,I:(I+1)] = targets
         else:
             # add a new label:
-            if (len(self._labelnames_)>0):
-                self._labelnames_.append(labelname)
-                self._labels_ = numpy.append(self._labels_,labels,1)
+            if (len(self._targetnames_)>0):
+                self._targetnames_.append(labelname)
+                self._targets_ = numpy.append(self._targets_,targets,1)
             else:
                 if not isinstance(labelname,list):
                     labelname = [labelname]
-                self._labelnames_ = labelname
-                self._labels_ = labels
+                self._targetnames_ = labelname
+                self._targets_ = targets
 
-    def getlabels(self,labelname):
-        if labelname in self._labelnames_:
-            I = self._labelnames_.index(labelname)
-            return self._labels_[:,I:(I+1)]
+    def gettargets(self,labelname):
+        if labelname in self._targetnames_:
+            I = self._targetnames_.index(labelname)
+            return self._targets_[:,I:(I+1)]
         else:
             return None
 
-    def showlabels(self,I=None):
+    def showtargets(self,I=None):
         if I is None:
-            if (len(self._labelnames_)>0):
-                print("This dataset has these labels defined:"),
-                print(self._labelnames_)
+            if (len(self._targetnames_)>0):
+                print("This dataset has these targets defined:"),
+                print(self._targetnames_)
             else:
-                print("No labels defined.")
+                print("No targets defined.")
         else:
-            labels = self.getlabels(I)
+            targets = self.gettargets(I)
             if I is None:
-                print("Cannot find labels ", I)
+                print("Cannot find targets ", I)
             else:
-                print(labels)
+                print(targets)
 
 
 
@@ -262,7 +262,7 @@ def scatterd(a):
     plt.winter()
 
 def scatterr(a):
-    plt.scatter(a.data[:,0],a.labels)
+    plt.scatter(a.data[:,0],a.targets)
     plt.title(a.name)
     plt.xlabel('Feature '+str(a.featlab[0]))
     plt.ylabel('Target')

@@ -164,7 +164,7 @@ def labeld(task=None,x=None,w=None):
         # we are applying to new data
         I = numpy.argmax(+x,axis=1)
         n = x.shape[0]
-        # complex way to deal with both number and string labels:
+        # complex way to deal with both numeric and string labels:
         out = []
         for i in range(n):
             out.append(x.featlab[I[i]])
@@ -191,8 +191,8 @@ def testc(task=None,x=None,w=None):
         return None,0
     elif (task=="eval"):
         # we are classifying new data
-        err = (labeld(x) != x.labels)*1.
-        w = x.getlabels('weights')
+        err = (labeld(x) != x.targets)*1.
+        w = x.gettargets('weights')
         if w is not None:
             err *= w
         return numpy.mean(err)
@@ -222,7 +222,7 @@ def mclassc(task=None,x=None,w=None):
         for i in range(c):
             # relabel class i to +1, and the rest to -1:
             newlab = (orglab==i)*2 - 1
-            x.labels = newlab
+            x.targets = newlab
             u = copy.deepcopy(w)
             f.append(u.train(x))
         # store the parameters, and labels:
@@ -235,7 +235,7 @@ def mclassc(task=None,x=None,w=None):
         for i in range(c):
             out = +(W[i](x))
             # which output should we choose?
-            I = numpy.where(W[i].labels==+1)
+            I = numpy.where(W[i].targets==+1)
             pred[:,i:(i+1)] = out[:,I[0]]
         return pred
     else:
@@ -712,7 +712,7 @@ def stumpc(task=None,x=None,w=None):
             raise ValueError('Stumpc can only deal with 2 classes.')
         # allow weights:
         n,dim = x.shape
-        w = x.getlabels('weights')
+        w = x.gettargets('weights')
         if (len(w)==0):
             w = numpy.ones((n,1))
         w /= numpy.sum(w)
@@ -806,7 +806,7 @@ def adaboostc(task=None,x=None,w=None):
         alpha = numpy.zeros((T,1))
         for t in range(T):
             #print("Iteration %d in Adaboost" % t)
-            x.setlabels('weights',w)
+            x.settargets('weights',w)
             tmp.data, ll = stumpc('train',x)
             h[t,0],h[t,1],h[t,2] = tmp.data
             #print('  -> Feature %d, with threshold %f and sign %d'% (h[t,0],h[t,1],h[t,2]))
@@ -868,7 +868,7 @@ def svc(task=None,x=None,w=None):
     elif (task=="train"):
         # we are going to train the mapping
         X = +x
-        y = numpy.ravel(x.labels)
+        y = numpy.ravel(x.targets)
         clf = copy.deepcopy(w)
         clf.fit(X,y)
         return clf,x.lablist()
@@ -900,7 +900,7 @@ def dectreec(task=None,x=None,w=None):
     elif (task=="train"):
         # we are going to train the mapping
         X = +x
-        y = numpy.ravel(x.labels)
+        y = numpy.ravel(x.targets)
         clf = copy.deepcopy(w)
         clf.fit(X,y)
         return clf,x.lablist()
@@ -1089,7 +1089,7 @@ def linearr(task=None,x=None,w=None):
         n,dim = x.shape
         dat = +vandermondem(x,w)
         Sinv = numpy.linalg.inv(dat.T.dot(dat))
-        beta = Sinv.dot(dat.T).dot(x.labels)
+        beta = Sinv.dot(dat.T).dot(x.targets)
         # store the parameters, and labels:
         return beta,['target']
     elif (task=="eval"):
@@ -1115,7 +1115,7 @@ def ridger(task=None,x=None,w=None):
         n,dim = x.shape
         dat = numpy.hstack((+x,numpy.ones((n,1))))
         Sinv = numpy.linalg.inv(dat.T.dot(dat) + w*numpy.eye(dim))
-        beta = Sinv.dot(dat.T).dot(x.labels)
+        beta = Sinv.dot(dat.T).dot(x.targets)
         # store the parameters, and labels:
         return beta,['target']
     elif (task=="eval"):
@@ -1139,7 +1139,7 @@ def kernelr(task=None,x=None,w=None):
         return 'Kernel regression', x
     elif (task=="train"):
         # we only need to store the data
-        return (+x,x.labels),['target']
+        return (+x,x.targets),['target']
     elif (task=="eval"):
         # we are applying to new data
         W = w.data
@@ -1168,7 +1168,7 @@ def lassor(task=None,x=None,w=None):
         return 'LASSO regression', regr
     elif (task=="train"):
         X = +x
-        y = x.labels
+        y = x.targets
         regr = copy.deepcopy(w)
         regr.fit(X,y)
         return regr,['target']
@@ -1198,8 +1198,8 @@ def testr(task=None,x=None,w=None):
         return None,0
     elif (task=="eval"):
         # we are comparing the output with the targets
-        err = (+x - x.labels)**2.
-        w = x.getlabels('weights')
+        err = (+x - x.targets)**2.
+        w = x.gettargets('weights')
         if w is not None:
             err *= w
         return numpy.mean(err)
