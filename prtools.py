@@ -1,6 +1,13 @@
-""" Prtools for Python
+"""
+Prtools for Python
+==================
 
-An attempt to port the ideas of prdataset and prmapping to Python.
+This module implements a general class of dataset and mapping, inspired
+by the original Matlab toolbox Prtools. It should abstract away the
+details of different classifiers, regressors, data-preprocessings and
+error evaluations, and allows for easy visualisation, comparison and
+combination of different methods.
+
 """
 
 import numpy
@@ -1207,6 +1214,14 @@ def testr(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for testr.')
 
+def hclust(D,ctype='s',k=0):
+    D = +D
+    sz = shape(D)
+    if (sz[0]!=sz[1]):
+        raise ValueError('Distance matrix should be square.')
+    return 0
+
+    
 def gendats(n,dim=2,delta=2.):
     prior = [0.5,0.5]
     N = genclass(n,prior)
@@ -1295,5 +1310,30 @@ def gendatsinc(n=25,sigm=0.1):
     out = prdataset(x,y)
     out.name = 'Sinc'
     return out
+
+def boomerangs(n=100):
+    p = [1./2,1./2]
+    N = genclass(n, p)
+    t = numpy.pi * (-0.5 + numpy.random.rand(N[0],1))
+
+    xa = 0.5*numpy.cos(t)           + 0.025*numpy.random.randn(N[0],1);
+    ya = 0.5*numpy.sin(t)           + 0.025*numpy.random.randn(N[0],1);
+    za = numpy.sin(2*xa)*numpy.cos(2*ya) + 0.025*numpy.random.randn(N[0],1);
+
+    t = numpy.pi * (0.5 + numpy.random.rand(N[1],1));
+
+    xb = 0.25 + 0.5*numpy.cos(t)    + 0.025*numpy.random.randn(N[1],1);
+    yb = 0.50 + 0.5*numpy.sin(t)    + 0.025*numpy.random.randn(N[1],1);
+    zb = numpy.sin(2*xb)*numpy.cos(2*yb) + 0.025*numpy.random.randn(N[1],1);
+
+    xa = numpy.concatenate((xa,ya,za),axis=1)
+    xb = numpy.concatenate((xb,yb,zb),axis=1)
+    x = numpy.concatenate((xa,xb),axis=0)
+    y = genlab(N,(1,2))
+    a = prdataset(x,y)
+    a.name = 'Boomerangs'
+    a.prior = p
+    return a
+
 
 
