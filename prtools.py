@@ -18,7 +18,7 @@ from sklearn import tree
 from sklearn import linear_model
 
 from mapping import prmapping,sequentialm,plotc,plotm
-from dataset import prdataset, genclass,genlab,gendat,scatterd
+from dataset import prdataset, genclass,genlab,gendat,scatterd,scatter3d
 from uci import iris
 
 # === mappings ===============================
@@ -1273,7 +1273,25 @@ def gendatb(n=(50,50),s=1.0):
     out.prior = prior
     return out
 
-def gendath(n):
+def gendatc(n=(50,50),dim=2,mu=0.):
+    prior = [0.5,0.5]
+    N = genclass(n,prior)
+
+    x0 = numpy.random.randn(N[0],dim)
+    x0[:,0] += mu
+    x1 = numpy.random.randn(N[1],dim)
+    x1[:,0] *= 3.
+    if (dim>1):
+        x1[:,1] *= 3.
+
+    x = numpy.concatenate((x0,x1),axis=0)
+    y = genlab(N,(-1,1))
+    out = prdataset(x,y)
+    out.name = 'Circular dataset'
+    out.prior = prior
+    return out
+
+def gendath(n=(50,50)):
     prior = [0.5,0.5]
     N = genclass(n,prior)
     x0 = numpy.random.randn(N[0],2)
