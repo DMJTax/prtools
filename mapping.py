@@ -262,10 +262,16 @@ def plotm(f,nrlevels=10,colors=None,gridsize = 30):
     if colors is None:
         colors = next(ax._get_lines.prop_cycler)['color']
     xl = ax.get_xlim()
-    yl = ax.get_ylim()
     dx = (xl[1]-xl[0])/(gridsize-1)
-    dy = (yl[1]-yl[0])/(gridsize-1)
     x = numpy.arange(xl[0],xl[1]+0.01*dx,dx)
+
+    if (f.shape[0]==1):
+        x.shape = (gridsize,1)
+        plt.plot(x,+f(x))
+        return
+
+    yl = ax.get_ylim()
+    dy = (yl[1]-yl[0])/(gridsize-1)
     y = numpy.arange(yl[0],yl[1]+0.01*dy,dy)
     X0,X1 = numpy.meshgrid(x,y)
     X0.shape = (gridsize*gridsize, 1)
