@@ -8,6 +8,7 @@ import numpy
 import copy
 
 import matplotlib.pyplot as plt
+from mpl_toolkits import mplot3d
 
 # === prdataset ============================================
 class prdataset(object):
@@ -260,6 +261,22 @@ def scatterd(a):
     plt.title(a.name)
     plt.xlabel('Feature '+str(a.featlab[0]))
     plt.ylabel('Feature '+str(ylab))
+    plt.winter()
+
+def scatter3d(a):
+    clrs = a.nlab().flatten()
+    sz = a.data.shape
+    if (sz[1]>2):
+        ax = plt.axes(projection='3d')
+        ax.scatter3D(a.data[:,0],a.data[:,1],a.data[:,2],c=clrs)
+        ylab = a.featlab[1]
+        zlab = a.featlab[2]
+    else:
+        raise ValueError('Please supply at least 3D data.')
+    plt.title(a.name)
+    ax.set_xlabel('Feature '+str(a.featlab[0]))
+    ax.set_ylabel('Feature '+str(ylab))
+    ax.set_zlabel('Feature '+str(zlab))
     plt.winter()
 
 def scatterr(a):
