@@ -24,7 +24,7 @@ class prdataset(object):
                 raise ValueError('Data matrix should be a numpy matrix.')
         if targets is not None:
             if not isinstance(targets,(numpy.ndarray, numpy.generic)):
-                raise ValueError('Label vector should be a numpy matrix.')
+                raise ValueError('Target vector should be a numpy matrix.')
             if (data.shape[0]!=targets.shape[0]):
                 raise ValueError('Number of targets does not match number of data samples.')
             if (len(targets.shape)<2):
@@ -35,6 +35,7 @@ class prdataset(object):
         self.featlab = numpy.arange(data.shape[1])
         self.setdata(data)
         self.targets = targets
+        self.targettype = 'crisp'
         self._targetnames_ = ()
         self._targets_ = []
         self.prior = []
@@ -136,9 +137,9 @@ class prdataset(object):
 
     def classsizes(self):
         try:       # in older versions of numpy the 'count' is not available
-            (k,count) = numpy.unique(self.targets,return_counts=True)
+            (k,count) = numpy.unique(numpy.array(self.targets),return_counts=True)
         except:
-            ll = numpy.unique(self.targets)
+            ll = numpy.unique(numpy.array(self.targets))
             count = numpy.zeros((len(ll),1))
             for i in range(len(ll)):
                 count[i] = numpy.sum(1.*(self.targets==ll[i]))
