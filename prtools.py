@@ -478,7 +478,7 @@ def parzenm(task=None,x=None,w=None):
         # we are applying to new data
         W = w.data
         nrcl = len(w.labels)
-        h = w.hyperparam[0]
+        h = w.hyperparam
         n,dim = x.shape
         Z = numpy.sqrt(2*numpy.pi)*h**dim
         out = numpy.zeros((n,nrcl))
@@ -850,7 +850,24 @@ def adaboostc(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for adaboostc.')
 
 def svc(task=None,x=None,w=None):
-    "Support vector classifier"
+    """
+    Support vector classifier
+
+           w = svc(A,(K,K_par,C))
+
+    Train the support vector classifier on dataset A, using kernel K
+    with kernel parameter K_par. The tradeoff between the margin and
+    training hinge loss is defined by parameter C.
+
+    The following kernels K are defined:
+    'linear'    linear kernel (default)
+    'poly'      polynomial kernel with degree K_par
+    'rbf'       RBF or Gaussian kernel with width K_par
+
+    Example:
+    a = gendatb()
+    w = svc(a,('rbf',4,1))
+    """
     if not isinstance(task,str):
         out = prmapping(svc,task,x)
         return out
@@ -1223,6 +1240,15 @@ def hclust(D,ctype='s',k=0):
 
     
 def gendats(n,dim=2,delta=2.):
+    """
+    Generation of a simple classification data.
+
+        A = gendats(N,DIM,DELTA)
+
+    Generate a two-class dataset A from two DIM-dimensional Gaussian
+    distributions, containing N samples. Optionally, the mean of the
+    first class can be shifted by an amount of DELTA.
+    """
     prior = [0.5,0.5]
     N = genclass(n,prior)
     x0 = numpy.random.randn(N[0],dim)
