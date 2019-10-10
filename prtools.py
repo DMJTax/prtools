@@ -54,6 +54,7 @@ def scalem(task=None,x=None,w=None):
     Scale mapping
 
         W = scalem(A)
+        W = A*scalem()
 
     Scales the features of dataset A to zero mean, and unit standard
     deviation.
@@ -90,6 +91,7 @@ def proxm(task=None,x=None,w=None):
     Proximity mapping
 
         W = proxm(A,(K,K_par))
+        W = A*proxm([],(K,K_par))
 
     Fit a proximity/kernel mapping on dataset A. The kernel is defined
     by K and its parameter K_par. The available proximities are:
@@ -161,6 +163,7 @@ def softmax(task=None,x=None,w=None):
     Softmax mapping
 
          W = softmax(A)
+         W = A*softmax()
 
     Compute the softmax of each row in A, by exponentiating each element
     in the row, summing them, and dividing each element in the row by
@@ -198,6 +201,7 @@ def classc(task=None,x=None,w=None):
     Classifier confidence mapping
 
          W = classc(A)
+         W = A*classc()
 
     Normalize the output of a classifier such that an approximate
     confidence value is obtained. Normalisation is done by just summing
@@ -233,6 +237,7 @@ def labeld(task=None,x=None,w=None):
     Label mapping
     
            LAB = labeld(A)
+           LAB = A*labeld()
 
     Compute the output labels from a (classified) dataset A.
 
@@ -269,7 +274,11 @@ def labeld(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for labeld.')
 
 def testc(task=None,x=None,w=None):
-    "Test classifier"
+    """
+    Test classifier
+
+          E = testc(A)
+    """
     if not isinstance(task,str):
         out = prmapping(testc)
         out.mapping_type = "trained"
