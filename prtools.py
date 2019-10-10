@@ -311,7 +311,10 @@ def testc(task=None,x=None,w=None):
 
 
 def mclassc(task=None,x=None,w=None):
-    "Multiclass classifier from two-class classifier"
+    """
+    Multiclass classifier from two-class classifier
+
+    """
     if not isinstance(task,str):
         out = prmapping(mclassc,task,x)
         return out
@@ -983,12 +986,13 @@ def svc(task=None,x=None,w=None):
             kernel = x[0]
             C = x[2]
             x = x[1]
-        if (kernel=='linear'):
+        if (kernel=='linear') or (kernel=='l'):
             clf = svm.SVC(kernel='linear',degree=x,C=C,probability=True)
-        elif (kernel=='poly'):
+        elif (kernel=='poly') or (kernel=='p'):
             clf = svm.SVC(kernel='poly',degree=x,gamma='auto',coef0=1.,C=C,probability=True)
             #clf = svm.SVC(kernel='poly',gamma=x,C=C,probability=True)
         else:
+            print("Supplied kernel is unknown, use RBF instead.")
             clf = svm.SVC(kernel='rbf',gamma=x,C=C,probability=True)
         return 'Support vector classifier', clf
     elif (task=="train"):
