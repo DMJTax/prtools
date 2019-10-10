@@ -8,6 +8,31 @@ details of different classifiers, regressors, data-preprocessings and
 error evaluations, and allows for easy visualisation, comparison and
 combination of different methods.
 
+A (small) subset of the methods are:
+    nmc       nearest mean classifier
+    ldc       linear discriminant classifier
+    qdc       quadratic discriminant classifier
+    parzenc   Parzen classifier
+    knnc      k-Nearest neighbor classifier
+    mogc      mixture of Gaussians classifier
+    ababoostc AdaBoost
+    svc       support vector classifier
+    dectreec  decision tree classifier
+
+    linearr   linear regression
+    ridger    ridgeregression
+    lassor    LASSO
+
+    labeld    labeling objects
+    testc     test classifier
+    testr     test regressor
+    cleval    classifier evaluation
+
+    scalem    scale mapping 
+    proxm     proximity mapping
+
+    pcam      PCA
+
 """
 
 import numpy
@@ -24,7 +49,18 @@ from uci import iris
 # === mappings ===============================
 
 def scalem(task=None,x=None,w=None):
-    "Scale mapping"
+    """
+    Scale mapping
+
+        W = scalem(A)
+
+    Scales the features of dataset A to zero mean, and unit standard
+    deviation.
+
+    Example:
+    >> w = scalem(a)
+    >> b = a*w
+    """
     if not isinstance(task,str):
         return prmapping(scalem,task,x)
     if (task=='untrained'):
@@ -49,7 +85,22 @@ def scalem(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for scalem.')
 
 def proxm(task=None,x=None,w=None):
-    "Proximity mapping"
+    """
+    Proximity mapping
+
+        W = proxm(A,(K,K_par))
+
+    Fit a proximity/kernel mapping on dataset A. The kernel is defined
+    by K and its parameter K_par. The available proximities are:
+        'eucl'      Euclidean distance
+        'city'      City-block distance
+        'rbf'       Radial basis function kernel with width K_par
+
+    Example:
+    >> u = proxm(('rbf',4))*nmc()
+    >> w = a*u   # will approximate a Parzen classifier
+
+    """
     if not isinstance(task,str):
         # A direct call to proxm, refer back to prmapping:
         return prmapping(proxm,task,x)
@@ -1261,15 +1312,24 @@ def gendats(n,dim=2,delta=2.):
     out.prior = prior
     return out
 
-def gendatd(n,dim=2,d1=2.,d2=1.):
+def gendatd(n,dim=2,delta=2.):
+    """
+    Generation of a difficult classification data.
+
+        A = gendatd(N,DIM,DELTA)
+
+    Generate a two-class dataset A from two DIM-dimensional Gaussian
+    distributions, containing N samples. Optionally, the mean of the
+    first class can be shifted by an amount of DELTA.
+    """
     prior = [0.5,0.5]
     N = genclass(n,prior)
     x0 = numpy.random.randn(N[0],dim)
     x1 = numpy.random.randn(N[1],dim)
     x0[:,1:] *= numpy.sqrt(40)
     x1[:,1:] *= numpy.sqrt(40)
-    x1[:,0] += d1  # move data from class 1
-    x1[:,1] += d1  # move data from class 1
+    x1[:,0] += delta  # move data from class 1
+    x1[:,1] += delta  # move data from class 1
     x = numpy.concatenate((x0,x1),axis=0)
     R = numpy.array([[1.,-1.],[1.,1.]])
     x[:,0:2] = x[:,0:2].dot(R)
