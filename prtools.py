@@ -314,6 +314,10 @@ def mclassc(task=None,x=None,w=None):
     """
     Multiclass classifier from two-class classifier
 
+    Example:
+    >> a = gendats3(100)
+    >> w = mclassc(a, svc([],('p',2,10)))
+    >> out = a*w
     """
     if not isinstance(task,str):
         out = prmapping(mclassc,task,x)
