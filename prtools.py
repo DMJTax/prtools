@@ -27,6 +27,7 @@ A (small) subset of the methods are:
     testc     test classifier
     testr     test regressor
     cleval    classifier evaluation
+    prcrossval  crossvalidation
 
     scalem    scale mapping 
     proxm     proximity mapping
@@ -156,7 +157,17 @@ def proxm(task=None,x=None,w=None):
 
 
 def softmax(task=None,x=None,w=None):
-    "Softmax mapping"
+    """
+    Softmax mapping
+
+         W = softmax(A)
+
+    Compute the softmax of each row in A, by exponentiating each element
+    in the row, summing them, and dividing each element in the row by
+    this sum:
+      A_new(i,j) = exp(A(i,j)) / sum_k exp(A(i,k))
+
+    """
     if not isinstance(task,str):
         out = prmapping(softmax)
         out.mapping_type = "trained"
