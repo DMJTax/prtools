@@ -23,7 +23,7 @@ class prmapping(object):
         self.mapping_type = "untrained"
         self.name, self.hyperparam = self.mapping_func("untrained",hyperp)
         self.data = () 
-        self.labels = ()
+        self.targets = ()
         self.shape = [0,0]
         self.user = []
         if isinstance(x,prdataset):
@@ -69,9 +69,9 @@ class prmapping(object):
         if args is not None:
             self.hyperparam = args
         #if (len(self.hyperparam)==0):
-        #    self.data,self.labels = self.mapping_func('train',x)
+        #    self.data,self.targets = self.mapping_func('train',x)
         #else:
-        self.data,self.labels = self.mapping_func('train',x,self.hyperparam)
+        self.data,self.targets = self.mapping_func('train',x,self.hyperparam)
 
         self.mapping_type = 'trained'
         # set the input and output sizes 
@@ -87,25 +87,25 @@ class prmapping(object):
         # evaluate
         if (self.mapping_type=="untrained"):
             raise ValueError('The mapping is not trained and cannot be evaluated.')
-        # not a good idea to supply the true labels?
+        # not a good idea to supply the true targets?
         # but it is needed for testc!
         #if isinstance(x,prdataset):
         #    x_nolab = copy.deepcopy(x)
-        #    x_nolab.labels = ()
+        #    x_nolab.targets = ()
         #    out = self.mapping_func("eval",x_nolab,self)
         #else:
         newx = copy.deepcopy(x)
         out = self.mapping_func("eval",newx,self)
-        if ((len(self.labels)>0) and (out.shape[1] != len(self.labels))):
+        if ((len(self.targets)>0) and (out.shape[1] != len(self.targets))):
             print(out.shape)
-            print(self.labels)
-            print(len(self.labels))
-            raise ValueError('Output of mapping does not match number of labels.')
-        if (len(self.labels)>0):
+            print(self.targets)
+            print(len(self.targets))
+            raise ValueError('Output of mapping does not match number of targets.')
+        if (len(self.targets)>0):
             if not isinstance(x,prdataset):
                 newx = prdataset(newx)
-            newx.featlab = self.labels
-        if isinstance(x,prdataset) and (len(self.labels)>0):
+            newx.featlab = self.targets
+        if isinstance(x,prdataset) and (len(self.targets)>0):
             newx.setdata(+out)
         else:
             newx = out
@@ -178,11 +178,11 @@ def sequentialm(task=None,x=None,w=None):
             w.data = newm
             w.shape[0] = newm[0].shape[0]
             w.shape[1] = newm[1].shape[1]
-            if (len(newm[1].labels)==0) and (newm[1].shape[1]==0):
-                # the second mapping does not have labels and sizes defined:
-                w.labels = newm[0].labels
+            if (len(newm[1].targets)==0) and (newm[1].shape[1]==0):
+                # the second mapping does not have targets and sizes defined:
+                w.targets = newm[0].targets
             else:
-                w.labels = newm[1].labels
+                w.targets = newm[1].targets
             w.mapping_type = 'trained'
             w.name = newm[0].name+'+'+newm[1].name
             return w
@@ -213,13 +213,13 @@ def sequentialm(task=None,x=None,w=None):
         if (u[1].mapping_type=='untrained'):
             neww = u[1].train(x2)
             u = (u[0],neww)
-        # fix the labels:
-        if (len(u[1].labels)==0) and (u[1].shape[1]==0):
-            # the second mapping does not have labels and sizes defined:
-            labels = u[0].labels
+        # fix the targets:
+        if (len(u[1].targets)==0) and (u[1].shape[1]==0):
+            # the second mapping does not have targets and sizes defined:
+            targets = u[0].targets
         else:
-            labels = u[1].labels
-        return u, labels
+            targets = u[1].targets
+        return u, targets
     elif (task=="eval"):
         # we are applying to new data
         W = w.data   # get the parameters out
