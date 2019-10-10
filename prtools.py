@@ -278,6 +278,13 @@ def testc(task=None,x=None,w=None):
     Test classifier
 
           E = testc(A)
+          E = A*testc()
+    Compute the error on dataset A.
+
+    Example:
+    >> A = gendatb()
+    >> W = ldc(A)
+    >> e = A*W*testc()
     """
     if not isinstance(task,str):
         out = prmapping(testc)
