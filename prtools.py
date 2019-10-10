@@ -167,6 +167,10 @@ def softmax(task=None,x=None,w=None):
     this sum:
       A_new(i,j) = exp(A(i,j)) / sum_k exp(A(i,k))
 
+    Example:
+    >> a = gendatb
+    >> w = nmc(a)
+    >> conf = +(a*w*softmax())
     """
     if not isinstance(task,str):
         out = prmapping(softmax)
@@ -190,7 +194,16 @@ def softmax(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for softmax.')
 
 def classc(task=None,x=None,w=None):
-    "Classc mapping"
+    """
+    Classifier confidence mapping
+
+         W = classc(A)
+
+    Normalize the output of a classifier such that an approximate
+    confidence value is obtained. Normalisation is done by just summing
+    the values in each row of A, and dividing each element of this row
+    by the sum. It is therefore assumed that all values are positive.
+    """
     if not isinstance(task,str):
         out = prmapping(classc)
         out.mapping_type = "trained"
@@ -216,7 +229,18 @@ def classc(task=None,x=None,w=None):
 
 
 def labeld(task=None,x=None,w=None):
-    "Label mapping"
+    """
+    Label mapping
+    
+           LAB = labeld(A)
+
+    Compute the output labels from a (classified) dataset A.
+
+    Example:
+    >> a = gendatb()
+    >> lab = a*ldc(a)*labeld
+    >> print(lab)
+    """
     if not isinstance(task,str):
         out = prmapping(labeld)
         out.mapping_type = "trained"
