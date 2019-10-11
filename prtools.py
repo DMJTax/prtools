@@ -795,7 +795,28 @@ def mog(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for mog.')
 
 def mogm(task=None,x=None,w=None):
-    "Mixture of Gaussians mapping"
+    """
+    Mixture of Gaussians mapping
+
+           W = mogm(A,(K,MTYPE,REG))
+
+    Estimate the parameters of a Mixture of Gaussians density model per
+    class in dataset A, with K Gaussian clusters. The shape of the
+    clusters can be specified by MTYPE:
+       MTYPE = 'full'  : full covariance matrix per cluster
+       MTYPE = 'diag'  : diagonal covariance matrix per cluster
+       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix 
+    In order to avoid numerical issues, the estimation of the covariance
+    matrix can be regularized by a small value REG.
+
+    Note: the density estimate is applied *per class* in dataset A.
+
+    Example:
+    >> a = gendatb([50,50])
+    >> w = mogm(a,(3,'sphr',0.0001))
+    >> scatterd(a)
+    >> plotm(w)
+    """
     if not isinstance(task,str):
         return prmapping(mogm,task,x)
     if (task=='untrained'):
