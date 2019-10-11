@@ -404,7 +404,26 @@ def bayesrule(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for bayesrule.')
 
 def gaussm(task=None,x=None,w=None):
-    "Gaussian density"
+    """
+    Gaussian density
+
+          W = gaussm(A,(CTYPE,REG))
+
+    Estimate a Gaussian density on each class in dataset A. The shape of
+    the covariance matrix can be specified by CTYPE:
+       CTYPE='full'     full covariance matrix
+       CTYPE='meancov'  averaged covariance matrix over the classes
+    In order to avoid numerical instabilities in the inverse of the
+    covariance matrix, regularization can be applied by adding REG to
+    the diagonal of the cov.matrix.
+
+    Example:
+    >> a = gendatb()
+    >> w = gaussm(a,'full',0.01))
+    >> scatterd(a)
+    >> plotm(w)
+
+    """
     if not isinstance(task,str):
         out = prmapping(gaussm,task,x)
         return out
