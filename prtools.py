@@ -314,6 +314,11 @@ def mclassc(task=None,x=None,w=None):
     """
     Multiclass classifier from two-class classifier
 
+         W = mclassc(A,U)
+
+    Construct a multi-class classifier using the untrained two-class
+    classifier U.
+
     Example:
     >> a = gendats3(100)
     >> w = mclassc(a, svc([],('p',2,10)))
@@ -359,7 +364,19 @@ def mclassc(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for mclassc.')
 
 def bayesrule(task=None,x=None,w=None):
-    "Bayesrule"
+    """
+    Bayes rule
+
+           W = bayesrule(A)
+           W = A*bayesrule()
+
+    Apply Bayes rule to the output of a density estimation.
+
+    >> a = gendatb()
+    >> u = parzenm()*bayesrule()
+    >> w = a*u
+    >> pred = +(a*w)
+    """
     if not isinstance(task,str):
         out = prmapping(bayesrule)
         out.mapping_type = "trained"
@@ -405,6 +422,7 @@ def gaussm(task=None,x=None,w=None):
         cv = numpy.zeros((c,dim,dim))
         icov = numpy.zeros((c,dim,dim))
         Z = numpy.zeros((c,1))
+        # estimate the means and covariance matrices:
         for i in range(c):
             xi = x.seldat(i)
             mn[i,:] = numpy.mean(+xi,axis=0)
@@ -417,7 +435,7 @@ def gaussm(task=None,x=None,w=None):
                 icov[i,:,:] = numpy.linalg.inv(cv[i,:,:])
                 Z[i] = numpy.sqrt(numpy.linalg.det(cv[i,:,:])*(2*numpy.pi)**dim)
         elif (w[0]=='meancov'):
-            meancov = numpy.mean(cv,axis=0) + w[1]*numpy.eye(dim)
+            meancov = numpy.average(cv,axis=0,weights=prior) + w[1]*numpy.eye(dim)
             meanZ = numpy.sqrt(numpy.linalg.det(meancov)*(2*numpy.pi)**dim)
             meanicov = numpy.linalg.inv(meancov)
             for i in range(c):
@@ -451,6 +469,15 @@ def gaussm(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for gaussm.')
 
 def ldc(task=None,x=None,w=None):
+    """
+    Linear discriminant classifier
+
+          W = ldc(A)
+    Computation of the linear classifier between the classes of the
+    dataset A by assuming normal densities with equal covariance
+    matrices.
+    """
+
     if x is None:  # no regularization of the cov.matrix
         x = [0.]
     u = gaussm(task,('meancov',x))*bayesrule()
@@ -542,6 +569,8 @@ def knnm(task=None,x=None,w=None):
         # just return the name, and hyperparameters
         if x is None:
             x = [1]
+        if (type(x) is float) or (type(x) is int):
+            x = [x]
         return 'k-Nearest neighbor', x
     elif (task=="train"):
         # we only need to store the data
@@ -550,7 +579,7 @@ def knnm(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are applying to new data
         W = w.data
-        nrcl = len(w.labels)
+        nrcl = len(w.targets)
         k = w.hyperparam[0]
         n = x.shape[0]
         lab = W.nlab()
@@ -570,7 +599,11 @@ def knnc(task=None,x=None,w=None):
     return knnm(task,x)*bayesrule()
 
 def parzenm(task=None,x=None,w=None):
-    "Parzen density estimate per class"
+    """
+    Parzen density estimate per class
+    
+          W = parzenm(A,H)
+    """
     if not isinstance(task,str):
         out = prmapping(parzenm,task,x)
         return out
@@ -578,6 +611,8 @@ def parzenm(task=None,x=None,w=None):
         # just return the name, and hyperparameters
         if x is None:
             x = [1]
+        if (type(x) is float) or (type(x) is int):
+            x = [x]
         return 'Parzen density', x
     elif (task=="train"):
         # we only need to store the data
@@ -586,8 +621,8 @@ def parzenm(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are applying to new data
         W = w.data
-        nrcl = len(w.labels)
-        h = w.hyperparam
+        nrcl = len(w.targets)
+        h = w.hyperparam[0]
         n,dim = x.shape
         Z = numpy.sqrt(2*numpy.pi)*h**dim
         out = numpy.zeros((n,nrcl))
@@ -624,7 +659,7 @@ def naivebm(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are applying to new data
         W = w.data
-        nrcl = len(w.labels)
+        nrcl = len(w.targets)
         nrfeat = len(W)
         if not isinstance(x,prdataset):
             x = prdataset(x)
@@ -641,7 +676,29 @@ def naivebc(task=None,x=None,w=None):
     return naivebm(task,x,w)*bayesrule()
 
 def mog(task=None,x=None,w=None):
-    "Mixture of Gaussians mapping"
+    """
+    Mixture of Gaussians 
+
+           W = mog(A,(K,MTYPE,REG))
+
+    Estimate the parameters of a Mixture of Gaussians density model,
+    with K Gaussian clusters. The shape of the clusters can be
+    specified by MTYPE:
+       MTYPE = 'full'  : full covariance matrix per cluster
+       MTYPE = 'diag'  : diagonal covariance matrix per cluster
+       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix 
+    In order to avoid numerical issues, the estimation of the covariance
+    matrix can be regularized by a small value REG.
+
+    Note: the density estimate is applied to all the data in dataset A,
+    regardless to what class the objects may belong to.
+
+    Example:
+    >> a = gendatb([50,50])
+    >> w = mog(a,(5,'sphr',0.0001))
+    >> scatterd(a)
+    >> plotm(w)
+    """
     if not isinstance(task,str):
         return prmapping(mog,task,x)
     if (task=='untrained'):
@@ -801,7 +858,7 @@ def baggingc(task=None,x=None,w=None):
         n = X.shape[0]
         W = w.data
         T = len(W)  # nr of aggregated classifiers
-        c = len(W[0].labels) # nr of classes
+        c = len(W[0].targets) # nr of classes
         out = numpy.zeros((n,c))
         J = range(n)
         for i in range(T):
