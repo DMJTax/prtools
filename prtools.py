@@ -851,6 +851,27 @@ def mogm(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for mogm.')
 
 def mogc(task=None,x=None,w=None):
+    """
+    Mixture of Gaussians classifier
+
+           W = mogc(A,(K,MTYPE,REG))
+
+    Fit a Mixture of Gaussians classifier with K clusters to dataset A.
+    Basically, a Mixture is estimated per class (using mogm), and with
+    Bayes rule a classifier is obtained.
+    The shape of the clusters can be specified by MTYPE:
+       MTYPE = 'full'  : full covariance matrix per cluster
+       MTYPE = 'diag'  : diagonal covariance matrix per cluster
+       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix 
+    In order to avoid numerical issues, the estimation of the covariance
+    matrix can be regularized by a small value REG.
+
+    Example:
+    >> a = gendatb([50,50])
+    >> w = mogc(a,(3,'sphr',0.0001))
+    >> scatterd(a)
+    >> plotc(w)
+    """
     return mogm(task,x,w)*bayesrule()
 
 def baggingc(task=None,x=None,w=None):
