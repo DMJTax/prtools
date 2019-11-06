@@ -17,7 +17,9 @@ A (small) subset of the methods are:
     mogc      mixture of Gaussians classifier
     ababoostc AdaBoost
     svc       support vector classifier
+    loglc     logistic classifier
     dectreec  decision tree classifier
+    lassoc    logistic classifier
 
     linearr   linear regression
     ridger    ridgeregression
@@ -1211,6 +1213,49 @@ def dectreec(task=None,x=None,w=None):
     else:
         print(task)
         raise ValueError('This task is *not* defined for dectreec.')
+
+def lassoc(task=None,x=None,w=None):
+    """
+    LASSO classifier
+
+           w = lassoc(A,alpha)
+
+    Train the LASSO classifier on dataset A, using L1 regularisation
+    with regularisation parameter alpha.
+
+    Example:
+    a = gendatb()
+    w = lassoc(a,(0.))
+    """
+    if not isinstance(task,str):
+        out = prmapping(lassoc,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            alpha = 0.
+        else:
+            alpha = x
+        clf = linear_model.Lasso(alpha=alpha,normalize=False,tol=0.0001)
+        return 'LASSO classifier', clf
+    elif (task=="train"):
+        # we are going to train the mapping
+        X = +x
+        y = numpy.ravel(x.targets)
+        clf = copy.deepcopy(w)
+        clf.fit(X,y)
+        return clf,x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        clf = w.data
+        pred = clf.predict(+x) 
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+            pred = numpy.hstack((-pred,pred)) # sigh
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for lassoc.')
 
 def pcam(task=None,x=None,w=None):
     "Principal Component Analysis "
