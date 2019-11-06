@@ -491,7 +491,8 @@ def ldc(task=None,x=None,w=None):
     """
     Linear discriminant classifier
 
-          W = ldc(A)
+          W = ldc(A,REG)
+
     Computation of the linear classifier between the classes of the
     dataset A by assuming normal densities with equal covariance
     matrices.
@@ -1135,6 +1136,49 @@ def svc(task=None,x=None,w=None):
     else:
         print(task)
         raise ValueError('This task is *not* defined for svc.')
+
+def loglc(task=None,x=None,w=None):
+    """
+    Logistic classifier
+
+           w = loglc(A,lambda)
+
+    Train the logistic classifier on dataset A, using L2 regularisation
+    with regularisation parameter lambda.
+
+    Example:
+    a = gendatb()
+    w = loglc(a,(0.))
+    """
+    if not isinstance(task,str):
+        out = prmapping(loglc,task,x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            C = numpy.inf
+        else:
+            C = 1./x
+        clf = linear_model.LogisticRegression(C=C,penalty='l2',tol=0.01,solver='saga')
+        return 'Logistic classifier', clf
+    elif (task=="train"):
+        # we are going to train the mapping
+        X = +x
+        y = numpy.ravel(x.targets)
+        clf = copy.deepcopy(w)
+        clf.fit(X,y)
+        return clf,x.lablist()
+    elif (task=="eval"):
+        # we are applying to new data
+        clf = w.data
+        pred = clf.decision_function(+x) 
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+            pred = numpy.hstack((-pred,pred)) # sigh
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for loglc.')
 
 def dectreec(task=None,x=None,w=None):
     "Decision tree classifier"
