@@ -10,10 +10,11 @@ print(a)
 
 #u = pr.nmc()
 #u = pr.scalem()*pr.proxm(('rbf',0.5))*pr.nmc()
-u = pr.gaussm(('full',0.1))*pr.bayesrule()
+#u = pr.gaussm(('full',0.1))*pr.bayesrule()
 #u = pr.ldc()
 #u = pr.knnc([1])
 #u = pr.scalem()*pr.parzenc()
+u = pr.scalem()*pr.parzenc([0.6])
 
 # train classifier, get labels, error and plot:
 w = a*u
