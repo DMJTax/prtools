@@ -35,7 +35,14 @@ A (small) subset of the methods are:
     proxm     proximity mapping
 
     pcam      PCA
-
+    
+A (small) subset of datasets:
+    gendatb   banana-shaped dataset
+    gendats   simple dataset
+    gendatd   difficult dataset
+    gendath   Highleyman dataset
+    gendatsinc   simple regression dataset
+    boomerangs   3D 2-class problem
 """
 
 import numpy
