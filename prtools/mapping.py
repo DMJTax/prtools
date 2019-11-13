@@ -30,7 +30,7 @@ class prmapping(object):
             self = self.train(copy.deepcopy(x))
 
     def __repr__(self):
-        return "prmapping("+self.mapping_func.func_name+","+self.mapping_type+")"
+        return "prmapping("+self.name+","+self.mapping_type+")"
     def __str__(self):
         outstr = ""
         if (len(self.name)>0):
