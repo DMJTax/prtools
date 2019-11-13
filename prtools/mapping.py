@@ -8,7 +8,7 @@ import numpy
 import copy
 import matplotlib.pyplot as plt
 
-from dataset import prdataset
+from .dataset import prdataset
 
 # === prmapping ============================================
 class prmapping(object):
