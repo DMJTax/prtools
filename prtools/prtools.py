@@ -46,6 +46,9 @@ A (small) subset of datasets:
 """
 
 from prtools import *
+from sklearn import svm
+from sklearn import linear_model
+from sklearn import tree
 
 # === mappings ===============================
 
