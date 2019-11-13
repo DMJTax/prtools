@@ -1,6 +1,6 @@
 import numpy
 import requests
-import dataset
+from . import dataset
 
 def getUCIdata(name,N,dim,getOnline=False):
     if getOnline:

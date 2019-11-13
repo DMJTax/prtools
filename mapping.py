@@ -8,7 +8,7 @@ import numpy
 import copy
 import matplotlib.pyplot as plt
 
-from dataset import prdataset
+from .dataset import prdataset
 
 # === prmapping ============================================
 class prmapping(object):
@@ -16,13 +16,13 @@ class prmapping(object):
 
     def __init__(self,mapping_func,x=[],hyperp=[]):
         # exception: when only hyperp are given
-        if (not isinstance(x,prdataset)) and (not hyperp): 
+        if (not isinstance(x,prdataset)) and (not hyperp):
             hyperp = x
             x = []
         self.mapping_func = mapping_func
         self.mapping_type = "untrained"
         self.name, self.hyperparam = self.mapping_func("untrained",hyperp)
-        self.data = () 
+        self.data = ()
         self.targets = ()
         self.shape = [0,0]
         self.user = []
@@ -74,7 +74,7 @@ class prmapping(object):
         self.data,self.targets = self.mapping_func('train',x,self.hyperparam)
 
         self.mapping_type = 'trained'
-        # set the input and output sizes 
+        # set the input and output sizes
         if (hasattr(x,'shape')):  # combiners do not eat datasets
             self.shape[0] = x.shape[1]
             # and the output size?
@@ -123,7 +123,7 @@ class prmapping(object):
         else:
             print(self.mapping_type)
             raise ValueError('Mapping type is not defined.')
-        return 
+        return
 
     def __mul__(self,other):
         #print('prmapping multiplication with right')

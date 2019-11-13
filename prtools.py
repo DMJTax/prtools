@@ -31,11 +31,11 @@ A (small) subset of the methods are:
     cleval    classifier evaluation
     prcrossval  crossvalidation
 
-    scalem    scale mapping 
+    scalem    scale mapping
     proxm     proximity mapping
 
     pcam      PCA
-    
+
 A (small) subset of datasets:
     gendatb   banana-shaped dataset
     gendats   simple dataset
@@ -52,9 +52,9 @@ from sklearn import svm
 from sklearn import tree
 from sklearn import linear_model
 
-from mapping import prmapping,sequentialm,plotc,plotm
-from dataset import prdataset, genclass,genlab,gendat,scatterd,scatter3d
-from uci import iris
+from .mapping import prmapping,sequentialm,plotc,plotm
+from .dataset import prdataset, genclass,genlab,gendat,scatterd,scatter3d
+from .uci import iris
 
 # === mappings ===============================
 
@@ -244,7 +244,7 @@ def classc(task=None,x=None,w=None):
 def labeld(task=None,x=None,w=None):
     """
     Label mapping
-    
+
            LAB = labeld(A)
            LAB = A*labeld()
 
@@ -579,7 +579,7 @@ def fisherc(task=None,x=None,w=None):
         # we are applying to new data
         W = w.data
         X = +x
-        out = X.dot(W[0]) - W[1] 
+        out = X.dot(W[0]) - W[1]
         if (len(out.shape)<2):  # This numpy/python stuff is pathetic
             out = out[:,numpy.newaxis]
         gr = numpy.hstack((-out,out))
@@ -630,7 +630,7 @@ def knnc(task=None,x=None,w=None):
 def parzenm(task=None,x=None,w=None):
     """
     Parzen density estimate per class
-    
+
           W = parzenm(A,H)
     """
     if not isinstance(task,str):
@@ -706,7 +706,7 @@ def naivebc(task=None,x=None,w=None):
 
 def mog(task=None,x=None,w=None):
     """
-    Mixture of Gaussians 
+    Mixture of Gaussians
 
            W = mog(A,(K,MTYPE,REG))
 
@@ -715,7 +715,7 @@ def mog(task=None,x=None,w=None):
     specified by MTYPE:
        MTYPE = 'full'  : full covariance matrix per cluster
        MTYPE = 'diag'  : diagonal covariance matrix per cluster
-       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix 
+       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix
     In order to avoid numerical issues, the estimation of the covariance
     matrix can be regularized by a small value REG.
 
@@ -834,7 +834,7 @@ def mogm(task=None,x=None,w=None):
     clusters can be specified by MTYPE:
        MTYPE = 'full'  : full covariance matrix per cluster
        MTYPE = 'diag'  : diagonal covariance matrix per cluster
-       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix 
+       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix
     In order to avoid numerical issues, the estimation of the covariance
     matrix can be regularized by a small value REG.
 
@@ -891,7 +891,7 @@ def mogc(task=None,x=None,w=None):
     The shape of the clusters can be specified by MTYPE:
        MTYPE = 'full'  : full covariance matrix per cluster
        MTYPE = 'diag'  : diagonal covariance matrix per cluster
-       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix 
+       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix
     In order to avoid numerical issues, the estimation of the covariance
     matrix can be regularized by a small value REG.
 
@@ -936,7 +936,7 @@ def baggingc(task=None,x=None,w=None):
             # do majority voting:
             pred = W[i](X)
             I = numpy.argmax(+pred,axis=1)
-            out[J,I] += 1 
+            out[J,I] += 1
         return out
     else:
         print(task)
@@ -1040,7 +1040,7 @@ def adaboostc(task=None,x=None,w=None):
         # setup vars
         T = w[0]
         N = x.shape[0]
-        
+
         y = 1 - 2*x.nlab()
         h = numpy.zeros((T,3))
 
@@ -1065,7 +1065,7 @@ def adaboostc(task=None,x=None,w=None):
                 return (perfecth,1.),x.lablist()
             alpha[t] = numpy.log(numpy.sum(w)/err - 1.)/2.
             w *= numpy.exp(-alpha[t]*y*pred)
-        
+
         # store the parameters, and labels:
         return (h,alpha),x.lablist()
     elif (task=="eval"):
@@ -1137,7 +1137,7 @@ def svc(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are applying to new data
         clf = w.data
-        pred = clf.decision_function(+x) 
+        pred = clf.decision_function(+x)
         if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
             pred = pred[:,numpy.newaxis]
             pred = numpy.hstack((-pred,pred)) # sigh
@@ -1180,7 +1180,7 @@ def loglc(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are applying to new data
         clf = w.data
-        pred = clf.decision_function(+x) 
+        pred = clf.decision_function(+x)
         if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
             pred = pred[:,numpy.newaxis]
             pred = numpy.hstack((-pred,pred)) # sigh
@@ -1212,7 +1212,7 @@ def dectreec(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are applying to new data
         clf = w.data
-        pred = clf.predict_proba(+x) 
+        pred = clf.predict_proba(+x)
         if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
             pred = pred[:,numpy.newaxis]
             pred = numpy.hstack((-pred,pred)) # sigh
@@ -1255,7 +1255,7 @@ def lassoc(task=None,x=None,w=None):
     elif (task=="eval"):
         # we are applying to new data
         clf = w.data
-        pred = clf.predict(+x) 
+        pred = clf.predict(+x)
         if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
             pred = pred[:,numpy.newaxis]
             pred = numpy.hstack((-pred,pred)) # sigh
@@ -1562,7 +1562,7 @@ def hclust(D,ctype='s',k=0):
         raise ValueError('Distance matrix should be square.')
     return 0
 
-    
+
 def gendats(n,dim=2,delta=2.):
     """
     Generation of a simple classification data.
@@ -1711,6 +1711,3 @@ def boomerangs(n=100):
     a.name = 'Boomerangs'
     a.prior = p
     return a
-
-
-
