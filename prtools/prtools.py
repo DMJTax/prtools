@@ -631,7 +631,7 @@ def parzenm(task=None,x=None,w=None):
     """
     Parzen density estimate per class
 
-          W = parzenm(A,H)
+        W = parzenm(A,H)
     """
     if not isinstance(task,str):
         out = prmapping(parzenm,task,x)
@@ -706,126 +706,7 @@ def naivebc(task=None,x=None,w=None):
 
 def mog(task=None,x=None,w=None):
     """
-    Mixture of Gaussians
-
-           W = mog(A,(K,MTYPE,REG))
-
-    Estimate the parameters of a Mixture of Gaussians density model,
-    with K Gaussian clusters. The shape of the clusters can be
-    specified by MTYPE:
-       MTYPE = 'full'  : full covariance matrix per cluster
-       MTYPE = 'diag'  : diagonal covariance matrix per cluster
-       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix
-    In order to avoid numerical issues, the estimation of the covariance
-    matrix can be regularized by a small value REG.
-
-    Note: the density estimate is applied to all the data in dataset A,
-    regardless to what class the objects may belong to.
-
-    Example:
-    >> a = gendatb([50,50])
-    >> w = mog(a,(5,'sphr',0.0001))
-    >> scatterd(a)
-    >> plotm(w)
-    """
-    if not isinstance(task,str):
-        return prmapping(mog,task,x)
-    if (task=='untrained'):
-        # just return the name, and hyperparameters
-        if x is None:
-            x = (3,'full',0.01)  # default: k=3, full cov., small reg.
-        return 'mog', x
-    elif (task=="train"):
-        # we are going to train the mapping
-        # some basic checking:
-        n,dim = x.shape
-        k = w[0]
-        ctype = w[1]
-        reg = w[2]
-        if (k>n):
-            raise ValueError('More clusters than datapoints requested.')
-        # some basic inits:
-        nriters = 100  #DXD
-        iter = 0
-        LL1 = -2e6
-        LL2 = -1e6
-        # initialize the priors, means, cov. matrices
-        iZ = (2*numpy.pi)**(-dim/2)
-        covwidth = numpy.mean(numpy.diag(numpy.cov(+x)))
-        largeval = 10.
-        pr = numpy.ones((k,1))/k
-        I = numpy.random.permutation(range(n))
-        mn = +x[I[:k],:]
-        cv = numpy.zeros((dim,dim,k))
-        for i in range(k):
-            cv[:,:,i] = numpy.eye(dim)*covwidth*largeval
-        # now run the iterations
-        P = numpy.zeros((n,k))
-        while (abs(LL2/LL1 - 1.)>1e-6) and (iter<nriters):
-            #print("Iteration %d:"%iter)
-            # compute densities
-            for i in range(k):
-                df = +x - mn[i,:]
-                icv = numpy.linalg.inv(cv[:,:,i])
-                if (dim>1):
-                    P[:,i] = numpy.sum(numpy.dot(df,icv)*df,axis=1)
-                else:
-                    P[:,i] = numpy.dot(df,icv)*df
-                P[:,i] = pr[i]*iZ* numpy.exp(-P[:,i]/2.)\
-                        *numpy.sqrt(numpy.linalg.det(icv))
-            # next iteration
-            iter += 1
-            LL2 = LL1
-            LL1 = numpy.sum(numpy.log(numpy.sum(P,axis=1)))
-            # compute responsibilities
-            sumP = numpy.sum(P,axis=1,keepdims=True)
-            sumP[sumP==0.] = 1.
-            resp = P/sumP
-            Nk = numpy.sum(resp,axis=0)
-            # re-estimate the parameters:
-            for i in range(k):
-                gamma = numpy.tile(resp[:,i:(i+1)],(1,dim))
-                mn[i,:] = numpy.sum(+x * gamma, axis=0,keepdims=True) / Nk[i]
-                df = +x - mn[i,:]
-                cv[:,:,i] = numpy.dot(df.T,df*gamma) / Nk[i] \
-                        + reg*numpy.diag(numpy.ones((dim,1)))
-                if (ctype=='diag'):
-                    cv[:,:,i] = numpy.diag(numpy.diag(cv[:,:,i]))
-                elif (ctype=='sphr'):
-                    s = numpy.mean(numpy.diag(cv[:,:,i]))
-                    cv[:,:,i] = s * numpy.diagflat(numpy.ones((dim,1)))
-                pr[i] = Nk[i]/n
-            # next!
-
-        # precompute the inverses and normalisation constants
-        Z = numpy.zeros((k,1))
-        for i in range(k):
-            cv[:,:,i] = numpy.linalg.inv(cv[:,:,i])
-            Z[i] = iZ*numpy.linalg.det(cv[:,:,i])
-
-        # return the parameters, and feature labels
-        return (pr,mn,cv,Z), range(k)  # output p(x|k) per component
-    elif (task=="eval"):
-        # we are applying to new data
-        W = w.data   # get the parameters out
-        n,dim = x.shape
-        k = W[1].shape[0]
-        out = numpy.zeros((n,k))
-        for i in range(k):
-            df = +x - W[1][i,:]
-            if (dim>1):
-                out[:,i] = numpy.sum(numpy.dot(df,W[2][:,:,i])*df,axis=1)
-            else:
-                out[:,i] = numpy.dot(df,W[2][:,:,i])*df
-            out[:,i] = W[0][i]*numpy.exp(-out[:,i]/2.)/W[3][i]
-        return out
-    else:
-        print(task)
-        raise ValueError('This task is *not* defined for mog.')
-
-def mogm(task=None,x=None,w=None):
-    """
-    Mixture of Gaussians mapping
+    Mixture of Gaussians 
 
            W = mogm(A,(K,MTYPE,REG))
 
@@ -834,7 +715,9 @@ def mogm(task=None,x=None,w=None):
     clusters can be specified by MTYPE:
        MTYPE = 'full'  : full covariance matrix per cluster
        MTYPE = 'diag'  : diagonal covariance matrix per cluster
-       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix
+
+       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix 
+
     In order to avoid numerical issues, the estimation of the covariance
     matrix can be regularized by a small value REG.
 
@@ -891,7 +774,8 @@ def mogc(task=None,x=None,w=None):
     The shape of the clusters can be specified by MTYPE:
        MTYPE = 'full'  : full covariance matrix per cluster
        MTYPE = 'diag'  : diagonal covariance matrix per cluster
-       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix
+       MTYPE = 'sphr'  : single value on the diagonal of cov. matrix 
+
     In order to avoid numerical issues, the estimation of the covariance
     matrix can be regularized by a small value REG.
 
@@ -936,7 +820,8 @@ def baggingc(task=None,x=None,w=None):
             # do majority voting:
             pred = W[i](X)
             I = numpy.argmax(+pred,axis=1)
-            out[J,I] += 1
+            out[J,I] += 1 
+
         return out
     else:
         print(task)
@@ -1040,7 +925,6 @@ def adaboostc(task=None,x=None,w=None):
         # setup vars
         T = w[0]
         N = x.shape[0]
-
         y = 1 - 2*x.nlab()
         h = numpy.zeros((T,3))
 
@@ -1213,6 +1097,7 @@ def dectreec(task=None,x=None,w=None):
         # we are applying to new data
         clf = w.data
         pred = clf.predict_proba(+x)
+
         if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
             pred = pred[:,numpy.newaxis]
             pred = numpy.hstack((-pred,pred)) # sigh
@@ -1562,7 +1447,6 @@ def hclust(D,ctype='s',k=0):
         raise ValueError('Distance matrix should be square.')
     return 0
 
-
 def gendats(n,dim=2,delta=2.):
     """
     Generation of a simple classification data.
@@ -1711,3 +1595,5 @@ def boomerangs(n=100):
     a.name = 'Boomerangs'
     a.prior = p
     return a
+
+  
