@@ -6,6 +6,6 @@ setup(
    description='Bare-bones implementation of Prtools for Python',
    author='D.M.J. Tax',
    author_email='',
-   packages=[],
+   packages=['prtools'],
    install_requires=['sklearn', 'numpy', 'matplotlib'],
 )
