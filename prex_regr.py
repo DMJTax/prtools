@@ -1,6 +1,5 @@
-import numpy
-from prtools import lassor, testr, breast, missingvalues
-import matplotlib.pyplot as plt
+from prtools import lassor, testr
+from prtools.uci import breast, missingvalues
 
 # Read in one of the UCI datasets (and use the class labels as a
 # regression target):

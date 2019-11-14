@@ -45,10 +45,17 @@ A (small) subset of datasets:
     boomerangs   3D 2-class problem
 """
 
-from prtools import *
-from sklearn import svm
+import copy
+
+import matplotlib.pyplot as plt
+import numpy
 from sklearn import linear_model
+from sklearn import svm
 from sklearn import tree
+
+from prtools.dataset import prdataset, genclass, genlab, gendat
+from prtools.mapping import prmapping
+
 
 # === mappings ===============================
 

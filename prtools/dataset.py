@@ -4,11 +4,11 @@ Pattern Recognition Dataset class
 Should provide a simple and consistent way to deal with datasets.
 """
 
-import numpy
 import copy
 
 import matplotlib.pyplot as plt
-from mpl_toolkits import mplot3d
+import numpy
+
 
 # === prdataset ============================================
 class prdataset(object):

@@ -4,11 +4,13 @@ Pattern Recognition Mapping class
 Should provide a uniform and consistent way of defining transformation for datasets.
 """
 
-import numpy
 import copy
+
 import matplotlib.pyplot as plt
+import numpy
 
 from .dataset import prdataset
+
 
 # === prmapping ============================================
 class prmapping(object):

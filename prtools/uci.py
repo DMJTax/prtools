@@ -1,6 +1,8 @@
 import numpy
 import requests
+
 from prtools import dataset
+
 
 def getUCIdata(name,N,dim,getOnline=False):
     if getOnline:
