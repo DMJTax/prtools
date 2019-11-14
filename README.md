@@ -1,8 +1,14 @@
-# prtools
 Prtools for Python
 ==================
 
-This is a bare-bones implementation of Prtools for Python. It includes the 
+## Installation
+The package can be installed by issuing `pip install git+https://github.com/DMJTax/prtools.git`. In Python, use `import prtools as pr` to import the package.
+
+Now, all functionality is available under the `pr` prefix, e.g.: `pr.prdataset(...)`.
+
+## Usage
+
+This is a bare-bones implementation of Prtools for Python. It includes the
 prdataset and prmapping objects. The main advantages are:
 1. The data and the labels are stored in one prdataset. That means that when
 a subset of a dataset is selected, only one operation is needed:
@@ -55,7 +61,7 @@ To define a mapping, you need to define three tasks:
    output for the given dataset should be computed.
 
 Next to these three operations, the definition of a mapping also
-requires a call to the function `prmapping` when no task is defined. 
+requires a call to the function `prmapping` when no task is defined.
 A bare-bones mapping is, for instance, the scale mapping:
 
 ```
@@ -86,7 +92,3 @@ def scalem(task=None,x=None,w=None):
 In this mapping each feature is normalised to get zero mean, and unit
 variance.  As can be seen, the mean and variance are estimated from a
 training set. In the 'eval' section the features are rescaled.
-
-
-
-
