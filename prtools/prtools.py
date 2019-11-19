@@ -1118,8 +1118,8 @@ def svc(task=None,x=None,w=None):
             clf = svm.SVC(kernel='poly',degree=x,gamma='auto',coef0=1.,C=C,probability=True)
             #clf = svm.SVC(kernel='poly',gamma=x,C=C,probability=True)
         else:
-            print("Supplied kernel is unknown, use RBF instead.")
-            clf = svm.SVC(kernel='rbf',gamma=x,C=C,probability=True)
+            #print("Supplied kernel is unknown, use RBF instead.")
+            clf = svm.SVC(kernel='rbf',gamma=1./(x*x),C=C,probability=True)
         return 'Support vector classifier', clf
     elif (task=="train"):
         # we are going to train the mapping
