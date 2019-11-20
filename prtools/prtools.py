@@ -1607,6 +1607,18 @@ def gendatd(n,dim=2,delta=2.):
     return out
 
 def gendatb(n=(50,50),s=1.0):
+    """
+    Generation of a banana shaped classes
+
+        A = gendatb(N,S)
+
+    Generate a two-dimensional, two-class dataset A of N objects with a
+    banana shaped distribution. The data is uniformly distributed along
+    the bananas and is superimposed with a normal distribution with
+    standard deviation S in all directions. Class priors are P(1) = P(2)
+    = 0.5.
+    Defaults: N = [50,50], S = 1.
+    """
     r = 5
     prior = [0.5,0.5]
     N = genclass(n,prior)
@@ -1627,6 +1639,20 @@ def gendatb(n=(50,50),s=1.0):
     return out
 
 def gendatc(n=(50,50),dim=2,mu=0.):
+    """
+    Generation of two spherical classes with different variances
+
+        A = gendatc(N,DIM,MU)
+
+    Generation of a DIM-dimensional 2-class dataset A of N objects.  Both
+    classes are spherically Gaussian distributed.
+
+    Class 1 has the identity matrix as covariance matrix and mean MU. If
+    U is a scalar then [U,0,0,..] is used as class mean.  Class 2 has
+    also the identity matrix as covariance matrix, except for a variance
+    of 4 for the first two features. Its mean is 0.  Class priors are
+    P(1) = P(2) = 0.5.
+    """
     prior = [0.5,0.5]
     N = genclass(n,prior)
 
@@ -1645,6 +1671,19 @@ def gendatc(n=(50,50),dim=2,mu=0.):
     return out
 
 def gendath(n=(50,50)):
+    """
+    Generation of Highleyman classes
+
+        A = gendath(N)
+
+    Generation of a 2-dimensional 2-class dataset A of N objects
+    according to Highleyman. 
+
+    The two Highleyman classes are defined by 
+    1: Gauss([1 1],[1 0; 0 0.25]).
+    2: Gauss([2 0],[0.01 0; 0 4]).
+    Class priors are P(1) = P(2) = 0.5 
+    """
     prior = [0.5,0.5]
     N = genclass(n,prior)
     x0 = numpy.random.randn(N[0],2)
@@ -1676,6 +1715,14 @@ def gendats3(n,dim=2,delta=2.):
     return out
 
 def gendatsinc(n=25,sigm=0.1):
+    """
+    Generation of Sinc data
+
+        A = gendatsinc(N,SIGMA)
+
+    Generate the standard 1D Sinc data containing N objects, with Gaussian
+    noise with standard deviation SIGMA. 
+    """
     x = -5. + 10.*numpy.random.rand(n,1)
     y = numpy.sin(numpy.pi*x)/(numpy.pi*x) + sigm*numpy.random.randn(n,1)
     out = prdataset(x,y)
