@@ -498,7 +498,8 @@ def ldc(task=None,x=None,w=None):
 
     Computation of the linear classifier between the classes of the
     dataset A by assuming normal densities with equal covariance
-    matrices.
+    matrices. The covariance matrix can be regularized by adding REG to
+    the diagonal of the matrix.
     """
 
     if x is None:  # no regularization of the cov.matrix
@@ -508,6 +509,16 @@ def ldc(task=None,x=None,w=None):
     return u
 
 def qdc(task=None,x=None,w=None):
+    """
+    Quadratic discriminant classifier
+
+          W = qdc(A,REG)
+
+    Computation of the quadratic classifier between the classes of the
+    dataset A by assuming normal densities with different covariance
+    matrices per class. The covariance matrices can be regularized by
+    adding REG to the diagonal of the matrices.
+    """
     if x is None:
         x = [0.]
     u = gaussm(task,('full',x))*bayesrule()
@@ -515,7 +526,14 @@ def qdc(task=None,x=None,w=None):
     return u
 
 def nmc(task=None,x=None,w=None):
-    "Nearest mean classifier"
+    """
+    Nearest mean classifier
+
+          W = nmc(A)
+
+    Computation of the nearest mean classifier between the classes in
+    the dataset A.
+    """
     if not isinstance(task,str):
         return prmapping(nmc,task,x)
     if (task=='untrained'):
@@ -538,7 +556,14 @@ def nmc(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for nmc.')
 
 def fisherc(task=None,x=None,w=None):
-    "Fisher classifier"
+    """
+    Fisher's Least Square Linear Discriminant
+
+          W = fisherc(A)
+
+    Finds the linear discriminant function between the classes in the 
+    dataset A by minimizing the errors in the least square sense.
+    """
     if not isinstance(task,str):
         out = prmapping(fisherc,task,x)
         return out
