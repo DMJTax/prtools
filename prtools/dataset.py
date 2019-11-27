@@ -48,17 +48,20 @@ class prdataset(object):
             outstr = "%s %d by %d prdataset" % (self.name,sz[0],sz[1])
         else:
             outstr = "%d by %d prdataset" % (sz[0],sz[1])
-        cnt = self.classsizes()
-        nrcl = len(cnt)
-        if (nrcl==0):
-            outstr += " with no targets"
-        elif (nrcl==1):
-            outstr += " with 1 class: [%d]"%sz[0]
-        else:
-            outstr += " with %d classes: [%d"%(nrcl,cnt[0])
-            for i in range(1,nrcl):
-                outstr += " %d"%cnt[i]
-            outstr += "]"
+        if (self.targettype=='crisp'):
+            cnt = self.classsizes()
+            nrcl = len(cnt)
+            if (nrcl==0):
+                outstr += " with no targets"
+            elif (nrcl==1):
+                outstr += " with 1 class: [%d]"%sz[0]
+            else:
+                outstr += " with %d classes: [%d"%(nrcl,cnt[0])
+                for i in range(1,nrcl):
+                    outstr += " %d"%cnt[i]
+                outstr += "]"
+        elif (self.targettype=='regression'):
+            outstr += " with continuous targets."
         return outstr
 
     def float(self):
@@ -137,6 +140,8 @@ class prdataset(object):
         return self
 
     def classsizes(self):
+        if (self.targettype=='regression'):
+            return None
         try:       # in older versions of numpy the 'count' is not available
             (k,count) = numpy.unique(numpy.array(self.targets),return_counts=True)
         except:
@@ -364,3 +369,7 @@ def gendat(x,n,seed=None):
 
     return out,leftout
 
+def gendatr(x,targets):
+    a = prdataset(x,targets)
+    a.targettype = 'regression'
+    return a
