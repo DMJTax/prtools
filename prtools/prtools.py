@@ -610,7 +610,15 @@ def fisherc(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for fisherc.')
 
 def knnm(task=None,x=None,w=None):
-    "k-Nearest neighbor classifier"
+    """
+    K-Nearest Neighbor density estimation
+
+          W = knnm(A,K)
+
+    A density estimator is constructed based on the k-Nearest Neighbour rule
+    using the objects in A.
+    Default: K=1
+    """
     if not isinstance(task,str):
         return prmapping(knnm,task,x)
     if (task=='untrained'):
@@ -644,6 +652,14 @@ def knnm(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for knnc.')
 
 def knnc(task=None,x=None,w=None):
+    """
+    K-Nearest Neighbor Classifier
+
+          W = knnc(A,K)
+
+    Computation of the K-nearest neighbor classifier for the dataset A. 
+    Default: K=1
+    """
     return knnm(task,x)*bayesrule()
 
 def parzenm(task=None,x=None,w=None):
