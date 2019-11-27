@@ -25,6 +25,8 @@ A (small) subset of the methods are:
     ridger    ridgeregression
     lassor    LASSO
 
+    kmeans    K-Means clustering
+
     labeld    labeling objects
     testc     test classifier
     testr     test regressor
@@ -46,6 +48,7 @@ A (small) subset of datasets:
 """
 
 from prtools import *
+from sklearn.cluster import KMeans
 from sklearn import svm
 from sklearn import linear_model
 from sklearn import tree
@@ -1778,5 +1781,51 @@ def boomerangs(n=100):
     a.prior = p
     return a
 
+def kmeans(task=None, x=None, w=None):
+    """
+    K-Means clustering
 
+           w = kmeans(A, (K, MAXIT, INIT))
 
+    Train the K-Means clustering algorithm on dataset A, using K clusters,
+    with maximum number of iterations MAXIT and INIT initialization method.
+
+    The following initializations methods INIT are defined:
+    'k-means++'    selects initial cluster centers for k-mean clustering in a smart way to speed up convergence (default)
+    'random'       take at random K objects as initial means
+
+    Example:
+    a = gendat()
+    w = kmeans(a, (3, 150, 'random'))
+    """
+    if not isinstance(task,str):
+        out = prmapping(kmeans, task, x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            k = 8
+            maxit = 300
+            init_centers = 'k-means++'
+        else:
+            k = x[0]
+            maxit = x[1]
+            init_centers = x[2]
+        cluster = KMeans(n_clusters=k, max_iter=maxit, init=init_centers)
+        return 'K-Means clustering', cluster
+    elif (task=="train"):
+        # we are going to train the mapping
+        X = +x
+        cluster = copy.deepcopy(w)
+        cluster.fit(X)
+        return cluster, ['clusterID']
+    elif (task=="eval"):
+        # we are applying to new data
+        cluster = w.data
+        pred = cluster.predict(+x)
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for kmeans.')
