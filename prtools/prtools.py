@@ -26,6 +26,7 @@ A (small) subset of the methods are:
     lassor    LASSO
 
     kmeans    K-Means clustering
+    hclust    Hierarchical Clustering clustering
 
     labeld    labeling objects
     testc     test classifier
@@ -48,7 +49,7 @@ A (small) subset of datasets:
 """
 
 from prtools import *
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn import svm
 from sklearn import linear_model
 from sklearn import tree
@@ -1577,12 +1578,53 @@ def testr(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for testr.')
 
-def hclust(D,ctype='s',k=0):
-    D = +D
-    sz = shape(D)
-    if (sz[0]!=sz[1]):
-        raise ValueError('Distance matrix should be square.')
-    return 0
+def hclust(task=None, x=None, w=None):
+    """
+    Hierarchical Clustering clustering
+
+           w = hclust(A, (K, TYPE))
+
+    Train the Hierarchical clustering algorithm on dataset A,
+    using K clusters and TYPE clustering criterion.
+
+    The following clustering criteria TYPE are defined:
+    'single'    uses the minimum of the distances between all observations of the two sets (default)
+    'complete'  uses the maximum distances between all observations of the two sets
+    'average'   uses the average of the distances of each observation of the two sets
+
+    Example:
+    a = gendat()
+    w = hclust(a, (2, 'average'))
+    """
+    if not isinstance(task,str):
+        out = prmapping(hclust, task, x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            k = 2
+            link = 'single'
+        else:
+            k = x[0]
+            link = x[1]
+        cluster = AgglomerativeClustering(n_clusters=k, linkage=link)
+        return 'Hierarchical clustering', cluster
+    elif (task=="train"):
+        # we are going to train the mapping
+        X = +x
+        cluster = copy.deepcopy(w)
+        cluster.fit(X)
+        return cluster, ['clusterID']
+    elif (task=="eval"):
+        # we are applying to new data
+        cluster = w.data
+        pred = cluster.labels_
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for hierarchical clustering.')
 
     
 def gendats(n,dim=2,delta=2.):
