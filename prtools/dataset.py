@@ -293,11 +293,10 @@ def dendro(X, link):
     :param X: prdataset feature vectors
     :param link: linkage type to be used for the dendogram generation
     """
-    Z = hierarchy.linkage(X, 'single')
+    z = hierarchy.linkage(X, link)
     plt.figure()
-    dn = hierarchy.dendrogram(Z, orientation='top', show_leaf_counts=True)
+    hierarchy.dendrogram(z, orientation='top', show_leaf_counts=True)
     plt.show()
-    # print(dn)
 
 # === datasets ===============================
 def genclass(n,p):
