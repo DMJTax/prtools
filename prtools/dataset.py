@@ -8,6 +8,7 @@ import numpy
 import copy
 
 import matplotlib.pyplot as plt
+from scipy.cluster import hierarchy
 from mpl_toolkits import mplot3d
 
 # === prdataset ============================================
@@ -285,6 +286,18 @@ def scatterr(a):
     plt.xlabel('Feature '+str(a.featlab[0]))
     plt.ylabel('Target')
     plt.winter()
+
+def dendro(X, link):
+    """
+    Plots the hierarchical clustering as a dendrogram
+    :param X: prdataset feature vectors
+    :param link: linkage type to be used for the dendogram generation
+    """
+    Z = hierarchy.linkage(X, 'single')
+    plt.figure()
+    dn = hierarchy.dendrogram(Z, orientation='top', show_leaf_counts=True)
+    plt.show()
+    # print(dn)
 
 # === datasets ===============================
 def genclass(n,p):
