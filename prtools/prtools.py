@@ -1879,7 +1879,8 @@ def dbi(a, lab):
 
                e = dbi(A, Y)
 
-        Train
+        Computes the Davies-Bouldin score for features A
+        and clustering labels Y.
 
         Example:
         a = gendat()
