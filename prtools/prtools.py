@@ -1888,7 +1888,7 @@ def dbi(a, lab):
         y = w.eval(a)
         e = dbi(a, y)
     """
-    with numpy.errstate(divide='ignore'):  # ignore division by zero warnings
+    with numpy.errstate(divide='ignore', invalid='ignore'):  # ignore division by zero warnings and invalid values
         e = davies_bouldin_score(a, lab.ravel())
         print('Davies-Bouldin Index:', e)
         return e
