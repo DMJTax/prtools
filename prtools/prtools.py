@@ -50,6 +50,7 @@ A (small) subset of datasets:
 
 from prtools import *
 from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.metrics import davies_bouldin_score
 from sklearn import svm
 from sklearn import linear_model
 from sklearn import tree
@@ -1871,3 +1872,22 @@ def kmeans(task=None, x=None, w=None):
     else:
         print(task)
         raise ValueError('This task is *not* defined for kmeans.')
+
+def dbi(a, lab):
+    """
+        Davies-Bouldin Index
+
+               e = dbi(A, Y)
+
+        Train
+
+        Example:
+        a = gendat()
+        w = kmeans(a, (3, 150, 'random'))
+        y = w.eval(a)
+        e = dbi(a, y)
+    """
+    with numpy.errstate(divide='ignore'):  # ignore division by zero warnings
+        e = davies_bouldin_score(a, lab.ravel())
+        print('Davies-Bouldin Index:', e)
+        return e
