@@ -8,6 +8,7 @@ import numpy
 import copy
 
 import matplotlib.pyplot as plt
+from scipy.cluster import hierarchy
 from mpl_toolkits import mplot3d
 
 # === prdataset ============================================
@@ -290,6 +291,38 @@ def scatterr(a):
     plt.xlabel('Feature '+str(a.featlab[0]))
     plt.ylabel('Target')
     plt.winter()
+
+def dendro(X, link):
+    """
+    Plots the hierarchical clustering as a dendrogram
+    :param X: prdataset feature vectors
+    :param link: linkage type to be used for the dendogram generation
+    """
+    z = hierarchy.linkage(X, link)
+    plt.figure()
+    dn = hierarchy.dendrogram(z, orientation='top', show_leaf_counts=True)
+    plt.show()
+    return dn
+
+def fusion_graph(X, link):
+    """
+    Plots the hierarchical clustering fusion graph. This functions also
+    plots the dendrogram out of which the fusion graph is generated
+    :param X: prdataset feature vectors
+    :param link: linkage type to be used for the fusion graph generation
+    """
+    dn = dendro(X, link)
+    # Compute fusion levels and number of clusters
+    fusion_levels = [el[1] for el in dn['dcoord']]
+    fusion_levels = sorted(fusion_levels, key=float, reverse=True)  # sort in descending order
+    clusters = [c + 1 for c in range(len(fusion_levels))]
+    # Plot fusion graph
+    plt.plot(clusters, fusion_levels, 'o-')
+    plt.xticks(numpy.arange(1, len(clusters) + 1, step=int(len(clusters)/5)))
+    plt.ylabel('Fusion level')
+    plt.xlabel('Number of clusters')
+    plt.title('Fusion graph')
+    plt.show()
 
 # === datasets ===============================
 def genclass(n,p):

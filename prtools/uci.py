@@ -1,6 +1,8 @@
 import numpy
 import requests
+import os
 from prtools import dataset
+from scipy.io import loadmat
 
 def getUCIdata(name,N,dim,getOnline=False):
     if getOnline:
@@ -74,4 +76,18 @@ def breast(getOnline=False):
             "Bare Nuclei", "Bland Chromatin", "Normal Nucleoli", "Mitoses"]
     a.name = 'Breast'
     a = a[:,1:]
+    return a
+
+def read_mat(file):
+    """
+    Reads a dataset from a .mat file and converts it into a prdataset
+
+    :param file: name of .mat file to be read from the /data folder
+    :return: a prdataset containing the features/labels read from the file
+    """
+    import prtools # import prtools to get its installation path
+    data = loadmat(os.path.dirname(prtools.__file__) + '/data/' + file + '.mat')
+    features = data['a']['data'][0][0]
+    labels = data['a']['nlab'][0][0]
+    a = dataset.prdataset(features, labels)
     return a

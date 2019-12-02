@@ -25,6 +25,9 @@ A (small) subset of the methods are:
     ridger    ridgeregression
     lassor    LASSO
 
+    kmeans    K-Means clustering
+    hclust    Hierarchical Clustering clustering
+
     labeld    labeling objects
     testc     test classifier
     testr     test regressor
@@ -46,6 +49,8 @@ A (small) subset of datasets:
 """
 
 from prtools import *
+from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.metrics import davies_bouldin_score
 from sklearn import svm
 from sklearn import linear_model
 from sklearn import tree
@@ -1590,12 +1595,53 @@ def testr(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for testr.')
 
-def hclust(D,ctype='s',k=0):
-    D = +D
-    sz = shape(D)
-    if (sz[0]!=sz[1]):
-        raise ValueError('Distance matrix should be square.')
-    return 0
+def hclust(task=None, x=None, w=None):
+    """
+    Hierarchical Clustering clustering
+
+           w = hclust(A, (K, TYPE))
+
+    Train the Hierarchical clustering algorithm on dataset A,
+    using K clusters and TYPE clustering criterion.
+
+    The following clustering criteria TYPE are defined:
+    'single'    uses the minimum of the distances between all observations of the two sets (default)
+    'complete'  uses the maximum distances between all observations of the two sets
+    'average'   uses the average of the distances of each observation of the two sets
+
+    Example:
+    a = gendat()
+    w = hclust(a, (2, 'average'))
+    """
+    if not isinstance(task,str):
+        out = prmapping(hclust, task, x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            k = 2
+            link = 'single'
+        else:
+            k = x[0]
+            link = x[1]
+        cluster = AgglomerativeClustering(n_clusters=k, linkage=link)
+        return 'Hierarchical clustering', cluster
+    elif (task=="train"):
+        # we are going to train the mapping
+        X = +x
+        cluster = copy.deepcopy(w)
+        cluster.fit(X)
+        return cluster, ['clusterID']
+    elif (task=="eval"):
+        # we are applying to new data
+        cluster = w.data
+        pred = cluster.labels_
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for hierarchical clustering.')
 
     
 def gendats(n,dim=2,delta=2.):
@@ -1794,5 +1840,71 @@ def boomerangs(n=100):
     a.prior = p
     return a
 
+def kmeans(task=None, x=None, w=None):
+    """
+    K-Means clustering
 
+           w = kmeans(A, (K, MAXIT, INIT))
 
+    Train the K-Means clustering algorithm on dataset A, using K clusters,
+    with maximum number of iterations MAXIT and INIT initialization method.
+
+    The following initializations methods INIT are defined:
+    'k-means++'    selects initial cluster centers for k-mean clustering in a smart way to speed up convergence (default)
+    'random'       take at random K objects as initial means
+
+    Example:
+    a = gendat()
+    w = kmeans(a, (3, 150, 'random'))
+    """
+    if not isinstance(task,str):
+        out = prmapping(kmeans, task, x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            k = 8
+            maxit = 300
+            init_centers = 'k-means++'
+        else:
+            k = x[0]
+            maxit = x[1]
+            init_centers = x[2]
+        cluster = KMeans(n_clusters=k, max_iter=maxit, init=init_centers)
+        return 'K-Means clustering', cluster
+    elif (task=="train"):
+        # we are going to train the mapping
+        X = +x
+        cluster = copy.deepcopy(w)
+        cluster.fit(X)
+        return cluster, ['clusterID']
+    elif (task=="eval"):
+        # we are applying to new data
+        cluster = w.data
+        pred = cluster.predict(+x)
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for kmeans.')
+
+def dbi(a, lab):
+    """
+        Davies-Bouldin Index
+
+               e = dbi(A, Y)
+
+        Computes the Davies-Bouldin score for features A
+        and clustering labels Y.
+
+        Example:
+        a = gendat()
+        w = kmeans(a, (3, 150, 'random'))
+        y = w.eval(a)
+        e = dbi(a, y)
+    """
+    with numpy.errstate(divide='ignore', invalid='ignore'):  # ignore division by zero warnings and invalid values
+        e = davies_bouldin_score(a, lab.ravel())
+        print('Davies-Bouldin Index:', e)
+        return e
