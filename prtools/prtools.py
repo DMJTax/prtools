@@ -1463,7 +1463,25 @@ def vandermondem(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for vandermondem.')
 
 def linearr(task=None,x=None,w=None):
-    "Linear regression"
+    """
+    Linear Regression 
+
+           w = linearr(A)
+           w = linearr(A,ORDER)
+
+    Fit an ordinary least squares regression on dataset A.
+    The optional second input argument, ORDER, allows for the mapping of
+    the original data X to all X^N with 0<n<ORDER
+
+    Example:
+    n = 100
+    x = numpy.random.rand(n,1)
+    y = 0.3*x + 0.1*numpy.random.randn(n,1)
+    a = gendatr(x,y)
+    w = linearr(a,(0.1))
+    scatterr(a)
+    plotr(w)
+    """
     if not isinstance(task,str):
         out = prmapping(linearr,task,x)
         return out
@@ -1490,12 +1508,12 @@ def linearr(task=None,x=None,w=None):
 
 def ridger(task=None,x=None,w=None):
     """
-    Ridge Regression classifier
+    Ridge Regression 
 
            w = ridger(A,LAMB)
 
     Train a ridge regression on dataset A with regularisation parameter
-    LAMB. 
+    LAMB.
 
     Example:
     n = 100
@@ -1503,6 +1521,8 @@ def ridger(task=None,x=None,w=None):
     y = 0.3*x + 0.1*numpy.random.randn(n,1)
     a = gendatr(x,y)
     w = ridger(a,(0.1))
+    scatterr(a)
+    plotr(w)
     """
     if not isinstance(task,str):
         out = prmapping(ridger,task,x)
