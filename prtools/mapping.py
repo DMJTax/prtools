@@ -231,6 +231,19 @@ def sequentialm(task=None,x=None,w=None):
 # === useful functions =====================================
 
 def plotc(f,levels=[0.0],colors=None,gridsize = 30):
+    """
+    Plot decision boundary
+
+        plotc(W)
+
+    Plot the decision boundary of trained classifier W
+
+    Example:
+    a = gendatb(100)
+    w = parzenc(a)
+    scatterd(a)
+    plotc(w)
+    """
     ax = plt.gca()
     if colors is None:
         colors = next(ax._get_lines.prop_cycler)['color']
@@ -258,6 +271,19 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
         plt.contour(x,y,z,levels,colors=colors)
 
 def plotm(f,nrlevels=10,colors=None,gridsize = 30):
+    """
+    Plot mapping outputs
+
+        plotm(W)
+
+    Plot the output of mapping W.
+
+    Example:
+    a = gendatb(100)
+    w = parzenm(a)
+    scatterd(a)
+    plotm(w)
+    """
     ax = plt.gca()
     if colors is None:
         colors = next(ax._get_lines.prop_cycler)['color']
@@ -290,6 +316,19 @@ def plotm(f,nrlevels=10,colors=None,gridsize = 30):
         plt.contour(x,y,z,levels,colors=colors)
 
 def plotr(f,color=None,gridsize=100):
+    """
+    Plot regression outputs
+
+        plotr(W)
+
+    Plot the output of regressor W.
+
+    Example:
+    a = gendatsinc(100)
+    w = kernelr(a,0.5)
+    scatterr(a)
+    plotr(w)
+    """
     ax = plt.gca()
     if color is None:
         color = next(ax._get_lines.prop_cycler)['color']
