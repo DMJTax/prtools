@@ -1552,7 +1552,20 @@ def ridger(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for ridger.')
 
 def kernelr(task=None,x=None,w=None):
-    "Kernel regression"
+    """
+    Kernel Regression 
+
+           w = kernelr(A,SIGM)
+
+    Fit a kernel regression with width parameter SIGM to regression
+    dataset A.
+
+    Example:
+    a = gendatsinc(100)
+    w = kernelr(a,0.4)
+    scatterr(a)
+    plotr(w)
+    """
     if not isinstance(task,str):
         out = prmapping(kernelr,task,x)
         return out
