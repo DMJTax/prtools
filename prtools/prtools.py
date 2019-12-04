@@ -1489,7 +1489,21 @@ def linearr(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for linearr.')
 
 def ridger(task=None,x=None,w=None):
-    "Ridge regression"
+    """
+    Ridge Regression classifier
+
+           w = ridger(A,LAMB)
+
+    Train a ridge regression on dataset A with regularisation parameter
+    LAMB. 
+
+    Example:
+    n = 100
+    x = numpy.random.rand(n,1)
+    y = 0.3*x + 0.1*numpy.random.randn(n,1)
+    a = gendatr(x,y)
+    w = ridger(a,(0.1))
+    """
     if not isinstance(task,str):
         out = prmapping(ridger,task,x)
         return out
