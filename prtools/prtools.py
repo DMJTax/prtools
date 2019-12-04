@@ -1478,9 +1478,11 @@ def linearr(task=None,x=None,w=None):
     x = numpy.random.rand(n,1)
     y = 0.3*x + 0.1*numpy.random.randn(n,1)
     a = gendatr(x,y)
-    w = linearr(a,(0.1))
+    w = linearr(a)
+    w3 = linearr(a,3)
     scatterr(a)
     plotr(w)
+    plotr(w3)
     """
     if not isinstance(task,str):
         out = prmapping(linearr,task,x)
