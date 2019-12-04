@@ -286,11 +286,23 @@ def scatter3d(a):
     plt.winter()
 
 def scatterr(a):
-    plt.scatter(a.data[:,0],a.targets)
-    plt.title(a.name)
-    plt.xlabel('Feature '+str(a.featlab[0]))
-    plt.ylabel('Target')
-    plt.winter()
+    sz = a.data.shape
+    if (sz[1]==1):
+        plt.scatter(a.data[:,0],a.targets)
+        plt.title(a.name)
+        plt.xlabel('Feature '+str(a.featlab[0]))
+        plt.ylabel('Target')
+        plt.winter()
+    elif (sz[1]==2):
+        ax = plt.axes(projection='3d')
+        ax.scatter3D(a.data[:,0],a.data[:,1],a.targets)
+        ylab = a.featlab[1]
+        plt.title(a.name)
+        ax.set_xlabel('Feature '+str(a.featlab[0]))
+        ax.set_ylabel('Feature '+str(ylab))
+        ax.set_zlabel('Targets')
+    else:
+        raise ValueError('Please supply at least 2D data.')
 
 def dendro(X, link):
     """
