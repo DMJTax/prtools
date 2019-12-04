@@ -1577,7 +1577,23 @@ def kernelr(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for kernelr.')
 
 def lassor(task=None,x=None,w=None):
-    "LASSO regression"
+    """
+    LASSO Regression 
+
+           w = lassor(A,LAMB)
+
+    Train a LASSO regression on dataset A with regularisation parameter
+    LAMB.
+
+    Example:
+    n = 100
+    x = numpy.random.rand(n,1)
+    y = 0.3*x + 0.1*numpy.random.randn(n,1)
+    a = gendatr(x,y)
+    w = lassor(a,(0.1))
+    scatterr(a)
+    plotr(w)
+    """
     if not isinstance(task,str):
         out = prmapping(lassor,task,x)
         return out
