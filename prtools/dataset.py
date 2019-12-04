@@ -415,6 +415,20 @@ def gendat(x,n,seed=None):
     return out,leftout
 
 def gendatr(x,targets):
+    """
+    Generate a regression dataset
+
+          a = gendatr(X,Y)
+
+    Generate a regression dataset from data matrix X and target values
+    Y. Data matrix X should be NxD, where N is the number of objects,
+    and D the feature dimensionality. Target Y should be Nx1.
+
+    Example:
+    x = numpy.random.randn(100,2)
+    y = numpy.sin(x[:,0])*numpy.sin(x[:,1])
+    a = gendatr(x,y)
+    """
     a = prdataset(x,targets)
     a.targettype = 'regression'
     return a
