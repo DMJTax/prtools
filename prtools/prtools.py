@@ -1679,10 +1679,14 @@ def hclust(task=None, x=None, w=None):
     w = hclust(a, (2, 'average'))
     """
     if not isinstance(task,str):
-        out = prmapping(hclust, task, x)
+        out = prmapping(hclust,x)
+        out.mapping_type = "trained"
+        if task is not None:
+            out = out(task)
         return out
     if (task=='untrained'):
         # just return the name, and hyperparameters
+        print('untrained :::')
         if x is None:
             k = 2
             link = 'single'
@@ -1690,16 +1694,15 @@ def hclust(task=None, x=None, w=None):
             k = x[0]
             link = x[1]
         cluster = AgglomerativeClustering(n_clusters=k, linkage=link)
+        print(cluster)
         return 'Hierarchical clustering', cluster
     elif (task=="train"):
-        # we are going to train the mapping
-        X = +x
-        cluster = copy.deepcopy(w)
-        cluster.fit(X)
-        return cluster, ['clusterID']
+        # this mapping cannot be trained.
+        return None,0
     elif (task=="eval"):
         # we are applying to new data
-        cluster = w.data
+        cluster = w.hyperparam
+        cluster.fit(+x)
         pred = cluster.labels_
         if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
             pred = pred[:,numpy.newaxis]
