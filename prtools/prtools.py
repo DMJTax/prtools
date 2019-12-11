@@ -1636,7 +1636,17 @@ def lassor(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for lassor.')
 
 def testr(task=None,x=None,w=None):
-    "Test regressor"
+    """
+        MSE for regression
+
+               e = testr(X)
+
+        Compute the Mean squared error error on dataset X.
+
+        Example:
+        a = pr.gendatb([20, 20])
+        e = testr(a)
+    """
     if not isinstance(task,str):
         out = prmapping(testr)
         out.mapping_type = "trained"
