@@ -1697,7 +1697,7 @@ def hclust(task=None, x=None, w=None):
         print(cluster)
         return 'Hierarchical clustering', cluster
     elif (task=="train"):
-        # this mapping cannot be trained.
+        # this mapping cannot be trained so return nothing.
         return None,0
     elif (task=="eval"):
         # we are applying to new data
