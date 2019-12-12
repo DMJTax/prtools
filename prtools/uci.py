@@ -87,7 +87,11 @@ def read_mat(file):
     """
     import prtools # import prtools to get its installation path
     data = loadmat(os.path.dirname(prtools.__file__) + '/data/' + file + '.mat')
-    features = data['a']['data'][0][0]
-    labels = data['a']['nlab'][0][0]
+    if file == 'diabetes':
+        features = data['a'][0][0][0]
+        labels = data['a'][0][0][1]
+    else:
+        features = data['a']['data'][0][0]
+        labels = data['a']['nlab'][0][0]
     a = dataset.prdataset(features, labels)
     return a
