@@ -1989,6 +1989,25 @@ def dbi(a, lab):
         print('Davies-Bouldin Index:', e)
         return e
 
+def featselb(task=None, x=None, w=None):
+    """
+    Trainable mapping for forward feature selection
+
+           w = featselb(A, (CLF, K, N))
+
+    Backward selection of K features using the dataset A. CLF corresponds to the classifier that will be used
+    to evaluate the accuracy of the subsets. The number of cross-validation folds N has to be provided.
+    w.targets can be used to view the selected features.
+
+    The following classifiers CLF are defined:
+    '1NN'    1 Nearest Neightbour (default)
+
+    Example:
+    a = gendat()
+    w = featselb(a, ('1NN', 4, 10))
+    """
+    return featsel(task, (x[0], x[1], False, x[2]), w)
+
 def featself(task=None, x=None, w=None):
     """
     Trainable mapping for forward feature selection
