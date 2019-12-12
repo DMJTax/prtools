@@ -49,7 +49,9 @@ A (small) subset of datasets:
 """
 
 from prtools import *
+from mlxtend.feature_selection import SequentialFeatureSelector
 from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import davies_bouldin_score
 from sklearn import svm
 from sklearn import linear_model
@@ -1986,3 +1988,77 @@ def dbi(a, lab):
         e = davies_bouldin_score(a, lab.ravel())
         print('Davies-Bouldin Index:', e)
         return e
+
+def featself(task=None, x=None, w=None):
+    """
+    Trainable mapping for forward feature selection
+
+           w = featself(A, (CLF, K, N))
+
+    Forward selection of K features using the dataset A. CLF corresponds to the classifier that will be used
+    to evaluate the accuracy of the subsets. The number of cross-validation folds N has to be provided.
+    w.targets can be used to view the selected features.
+
+    The following classifiers CLF are defined:
+    '1NN'    1 Nearest Neightbour (default)
+
+    Example:
+    a = gendat()
+    w = featself(a, ('1NN', 4, 10))
+    """
+    return featsel(task, (x[0], x[1], True, x[2]), w)
+
+def featsel(task=None, x=None, w=None):
+    """
+    Sequential Feature Selector
+
+           w = featself(A, (CLF, K, FORWARD, N))
+
+    Selection of K features using the dataset A. CLF corresponds to the classifier that will be used
+    to evaluate the accuracy of the subsets. FORWARD can be set to True for forward feature selection
+    or False for backward feature selection. The number of cross-validation folds N has to be provided.
+
+    The following classifiers CLF are defined:
+    '1NN'    1 Nearest Neightbour (default)
+
+    Example:
+    a = gendat()
+    w = featsel(a, ('1NN', 4, True, 10))
+    """
+    if not isinstance(task,str):
+        out = prmapping(featsel, task, x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            clf = '1NN'
+            features = 1
+            setting = False
+            folds = 10
+        else:
+            clf = x[0]
+            features = x[1]
+            setting = x[2]
+            folds = x[3]
+        if clf == '1NN':
+            clf = KNeighborsClassifier(n_neighbors=1)
+        sfs = SequentialFeatureSelector(clf, k_features=features, forward=setting, floating=False,
+                                        verbose=0, scoring='accuracy', cv=folds)
+        return 'Sequential Feature Selector', sfs
+    elif (task=="train"):
+        # we are going to train the mapping
+        X = +x
+        y = x.targets
+        sfs = copy.deepcopy(w)
+        sfs = sfs.fit(X, y.ravel())
+        return sfs, sfs.k_feature_idx_
+    elif (task=="eval"):
+        # we are applying to new data
+        sfs = w.data
+        pred = x[:, list(sfs.k_feature_idx_)]
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for feature selector.')
