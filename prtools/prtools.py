@@ -50,6 +50,7 @@ A (small) subset of datasets:
 
 from prtools import *
 from mlxtend.feature_selection import SequentialFeatureSelector
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import davies_bouldin_score
@@ -2001,6 +2002,7 @@ def featselb(task=None, x=None, w=None):
 
     The following classifiers CLF are defined:
     '1NN'    1 Nearest Neightbour (default)
+    'LDA'    Linear Discriminant Analysis
 
     Example:
     a = gendat()
@@ -2020,6 +2022,7 @@ def featself(task=None, x=None, w=None):
 
     The following classifiers CLF are defined:
     '1NN'    1 Nearest Neightbour (default)
+    'LDA'    Linear Discriminant Analysis
 
     Example:
     a = gendat()
@@ -2039,6 +2042,7 @@ def featsel(task=None, x=None, w=None):
 
     The following classifiers CLF are defined:
     '1NN'    1 Nearest Neightbour (default)
+    'LDA'    Linear Discriminant Analysis
 
     Example:
     a = gendat()
@@ -2061,6 +2065,8 @@ def featsel(task=None, x=None, w=None):
             folds = x[3]
         if clf == '1NN':
             clf = KNeighborsClassifier(n_neighbors=1)
+        if clf == 'LDA':
+            clf = LinearDiscriminantAnalysis()
         sfs = SequentialFeatureSelector(clf, k_features=features, forward=setting, floating=False,
                                         verbose=0, scoring='accuracy', cv=folds)
         return 'Sequential Feature Selector', sfs
