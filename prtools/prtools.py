@@ -53,7 +53,8 @@ from mlxtend.feature_selection import SequentialFeatureSelector
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import davies_bouldin_score
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import davies_bouldin_score, accuracy_score
 from sklearn import svm
 from sklearn import linear_model
 from sklearn import tree
@@ -2034,7 +2035,7 @@ def featsel(task=None, x=None, w=None):
     """
     Sequential Feature Selector
 
-           w = featself(A, (CLF, K, FORWARD, N))
+           w = featsel(A, (CLF, K, FORWARD, N))
 
     Selection of K features using the dataset A. CLF corresponds to the classifier that will be used
     to evaluate the accuracy of the subsets. FORWARD can be set to True for forward feature selection
@@ -2081,6 +2082,69 @@ def featsel(task=None, x=None, w=None):
         # we are applying to new data
         sfs = w.data
         pred = x[:, list(sfs.k_feature_idx_)]
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for feature selector.')
+
+def featseli(task=None, x=None, w=None):
+    """
+    Trainable mapping for individual feature selection
+
+     w = featseli(A, (CLF, K, N))
+
+    Individual selection of K features using the dataset A. CLF corresponds to the classifier that will be used
+    to evaluate the accuracy achieved via each feature individually. The number of cross-validation folds N has
+    to be provided. w.targets can be used to view the selected features.
+
+    The following classifiers CLF are defined:
+    '1NN'    1 Nearest Neightbour (default)
+    'LDA'    Linear Discriminant Analysis
+
+    Example:
+    a = gendat()
+    w = featseli(a, ('1NN', 4, 10))
+    """
+    if not isinstance(task,str):
+        out = prmapping(featseli, task, x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x[0] = '1NN'
+            x[1] = 1
+            x[2] = 10
+        return 'Individual Feature Selector', x
+    elif (task=="train"):
+        # we are going to train the mapping
+        X = +x
+        y = x.targets
+        fs = copy.deepcopy(w)
+        if w[0] == '1NN':
+            clf = KNeighborsClassifier(n_neighbors=1)
+        if w[0] == 'LDA':
+            clf = LinearDiscriminantAnalysis()
+        skf = StratifiedKFold(n_splits=w[2])
+        feat_accuracy = []  # average classification accuracy per individual feature
+        # For every feature individually
+        for feat in range(X.shape[1]):
+            feat_accuracy_per_fold = []  # accuracy for specific feature per fold
+            # Perform k-fold cross validation
+            for train_index, test_index in skf.split(X, y):
+                # Stratified train-test splits
+                X_train, X_test = X[train_index, feat], X[test_index, feat]
+                y_train, y_test = y[train_index], y[test_index]
+                clf.fit(X_train.reshape(-1, 1), y_train.ravel())
+                y_pred = clf.predict(X_test.reshape(-1, 1))
+                feat_accuracy_per_fold.append(accuracy_score(y_test, y_pred))
+            feat_accuracy.append(numpy.mean(feat_accuracy_per_fold))
+        sorted_idx = numpy.argsort(feat_accuracy)  # list is sorted in ascending order, return K last elements
+        return fs, sorted_idx[-w[1]:]
+    elif (task=="eval"):
+        # we are applying to new data
+        pred = x[:, w.targets]
         if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
             pred = pred[:,numpy.newaxis]
         return pred
