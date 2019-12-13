@@ -52,12 +52,13 @@ from prtools import *
 from mlxtend.feature_selection import SequentialFeatureSelector
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.cluster import KMeans, AgglomerativeClustering
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import StratifiedKFold
+from sklearn.neighbors import KNeighborsClassifier, DistanceMetric
+from sklearn.model_selection import StratifiedKFold, LeaveOneOut
 from sklearn.metrics import davies_bouldin_score, accuracy_score
 from sklearn import svm
 from sklearn import linear_model
 from sklearn import tree
+import sys
 
 # === mappings ===============================
 
@@ -2151,3 +2152,50 @@ def featseli(task=None, x=None, w=None):
     else:
         print(task)
         raise ValueError('This task is *not* defined for feature selector.')
+
+def feateval(a, x=None):
+    """
+    Evaluation of feature set for classification
+
+     J = feateval(A, CRIT)
+
+    Evaluation of features by the criterion CRIT, using objects in the dataset A.
+    The larger J, the better. Resulting J-values are incomparable over the various methods.
+
+    The following CRIT methods are defined:
+    '1NN'    1 Nearest Neightbou classification performance (default)
+    'eucl-s'    sum of squared Euclidean distances
+    'eucl-m'    minimum of squared Euclidean distances
+
+    Example:
+    a = gendat()
+    e = feateval(a, 'eucl-s')
+    """
+    X = +a
+    y = a.targets
+    if x == '1NN':
+        clf = KNeighborsClassifier(n_neighbors=1)
+        loo = LeaveOneOut()
+        loo.get_n_splits(X)
+        accuracy_per_fold = []
+        # Leave-one-out for 1NN
+        for train_index, test_index in loo.split(X):
+            X_train, X_test = X[train_index], X[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+            clf.fit(X_train, y_train.ravel())
+            y_pred = clf.predict(X_test)
+            accuracy_per_fold.append(accuracy_score(y_test, y_pred))
+        metric = numpy.mean(accuracy_per_fold)
+    elif x == 'eucl-s' or x == 'eucl-m':
+        U = []
+        unique_classes = numpy.unique(y)
+        for lab in unique_classes:
+            U.append(numpy.mean(X[numpy.where(y == lab)[0], :], axis=0))
+        dist = DistanceMetric.get_metric('euclidean')
+        D = numpy.power(dist.pairwise(U), 2)
+        if x == 'eucl-s':
+            metric = numpy.sum(D)/2
+        elif x == 'eucl-m':
+            D = D + sys.float_info.max * numpy.eye(len(unique_classes))
+            metric = numpy.min(D)
+    return metric
