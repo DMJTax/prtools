@@ -1994,7 +1994,7 @@ def dbi(a, lab):
 
 def featselb(task=None, x=None, w=None):
     """
-    Trainable mapping for forward feature selection
+    Trainable mapping for backward feature selection
 
            w = featselb(A, (CLF, K, N))
 
