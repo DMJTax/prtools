@@ -7,6 +7,7 @@ Should provide a uniform and consistent way of defining transformation for datas
 import numpy
 import copy
 import matplotlib.pyplot as plt
+from sklearn import linear_model
 
 from .dataset import prdataset
 
@@ -151,6 +152,20 @@ class prmapping(object):
             return newself(other)
         else:
             return NotImplemented
+
+    def float(self):
+        # Print the values of w and the intercept
+        if(isinstance(self.data, numpy.ndarray)):
+            return self.data.copy()
+        elif(isinstance(self.data, linear_model.Lasso)):
+            coef = self.data.coef_.reshape(self.data.coef_.size, 1)
+            intercept = self.data.intercept_
+            return numpy.vstack((coef, intercept))
+        else:
+            raise ValueError('Mapping has no way to print values (yet)')
+    
+    def __pos__(self):
+        return self.float()
 
 
 def sequentialm(task=None,x=None,w=None):
