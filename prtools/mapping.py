@@ -152,6 +152,12 @@ class prmapping(object):
         else:
             return NotImplemented
 
+    def float(self):
+        return self.data.copy()
+
+    def __pos__(self):
+        return self.float()
+
 
 def sequentialm(task=None,x=None,w=None):
     "Sequential mapping"
