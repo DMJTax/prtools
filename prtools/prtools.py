@@ -1543,7 +1543,7 @@ def ridger(task=None,x=None,w=None):
         # we are going to train the mapping
         n,dim = x.shape
         dat = numpy.hstack((+x,numpy.ones((n,1))))
-        Sinv = numpy.linalg.inv(dat.T.dot(dat) + w*numpy.eye(dim+1))
+        Sinv = numpy.linalg.inv(dat.T.dot(dat) + w*numpy.eye(dim))
         beta = Sinv.dot(dat.T).dot(x.targets)
         # store the parameters, and labels:
         return beta,['target']
