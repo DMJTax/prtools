@@ -58,7 +58,13 @@ from sklearn.metrics import davies_bouldin_score, accuracy_score
 from sklearn import svm
 from sklearn import linear_model
 from sklearn import tree
+
+from sklearn.decomposition import PCA, FastICA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.manifold import LocallyLinearEmbedding, Isomap
+
 import sys
+
 
 # === mappings ===============================
 
@@ -1421,7 +1427,7 @@ def clevalf(a,u,trainsize=0.6,nrreps=5,testfunc=testc):
     err = numpy.zeros((dim,nrreps))
     err_app = numpy.zeros((dim,nrreps))
     for f in range(nrreps):
-        #print("Clevalf: iteration %d." % f)
+        # print("Clevalf: iteration %d." % f)
         for i in range(1,dim):
             x,z = gendat(a[:,:i], trainsize,seed=f)
             w = x*u
@@ -1972,6 +1978,7 @@ def kmeans(task=None, x=None, w=None):
         print(task)
         raise ValueError('This task is *not* defined for kmeans.')
 
+
 def dbi(a, lab):
     """
         Davies-Bouldin Index
@@ -1991,6 +1998,239 @@ def dbi(a, lab):
         e = davies_bouldin_score(a, lab.ravel())
         print('Davies-Bouldin Index:', e)
         return e
+
+def pcam(task=None, x=None, w=None):
+    """
+    Principal Component Analysis
+
+    W = pcam(A, N)
+
+    Performs principal component analysis (PCA) on dataset A, keeping N (by default 1) dimensions.
+
+    Example:
+    a = read_mat("cigars")
+    w = pcam(a, 1)
+    b = a*w
+    """
+
+    if not isinstance(task, str):
+        out = prmapping(pcam, task, x)
+        return out
+    if task == 'untrained':
+        # just return the name, and hyperparameters
+        if x is None:
+            n = 1
+        else:
+            n = x
+        pca = PCA(n_components=n)
+        return 'Principal Component Analysis', pca
+
+    elif task == "train":
+        # we are going to train the mapping
+        X = +x
+        pca = copy.deepcopy(w)
+        pca.fit(X)
+        return pca, range(pca.n_components_)
+
+    elif task == "eval":
+        # we are applying to new data
+        pca = w.data
+        pred = pca.transform(+x)
+        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
+            pred = pred[:, numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for pcam.')
+
+
+def icam(task=None, x=None, w=None):
+    """
+    Independent Component Analysis
+
+    W = icam(A, N)
+
+    Performs independent component analysis (ICA) on dataset A, keeping N (by default 1) dimensions.
+
+    Example:
+    a = read_mat("cigars")
+    w = pcam(a, 1)
+    b = a*w
+    """
+
+    if not isinstance(task, str):
+        out = prmapping(icam, task, x)
+        return out
+    if task == 'untrained':
+        # just return the name, and hyperparameters
+        if x is None:
+            n = 1
+        else:
+            n = x
+        ica = FastICA(n_components=n)
+        return 'Independent Component Analysis', ica
+
+    elif task == "train":
+        # we are going to train the mapping
+        X = +x
+        ica = copy.deepcopy(w)
+        ica.fit(X)
+        return ica, range(ica.components_.shape[0])
+
+    elif task == "eval":
+        # we are applying to new data
+        ica = w.data
+        pred = ica.transform(+x)
+        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
+            pred = pred[:, numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for icam.')
+
+
+def fisherm(task=None, x=None, w=None):
+    """
+        Linear Discriminant Analysis
+
+        W = fisherm(A, N)
+
+        Performs linear discriminant analysis (LDA) on dataset A, keeping N < C (by default min(C, K) - 1) dimensions,
+        where C is the number of classes and K the number of features in A.
+
+        Example:
+        a = read_mat("cigars")
+        w = fisherm(a, 1)
+        b = a*w
+        """
+    if not isinstance(task, str):
+        out = prmapping(fisherm, task, x)
+        return out
+    if task == 'untrained':
+        # just return the name, and hyperparameters
+        if x is None:
+            n = 1
+        else:
+            n = x
+        fisher = LinearDiscriminantAnalysis(n_components=n)
+        return 'Linear Discriminant Analysis', fisher
+
+    elif task == "train":
+        # we are going to train the mapping
+        X = +x
+        lab = x.targets
+        fisher = copy.deepcopy(w)
+
+        fisher.fit(X, lab.ravel())
+        return fisher, range(len(fisher.coef_))
+
+    elif task == "eval":
+        # we are applying to new data
+        fisher = w.data
+        pred = fisher.transform(+x)
+        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
+            pred = pred[:, numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for fisherm.')
+
+
+def llem(task=None, x=None, w=None):
+    """
+            Locally Linear Embedding
+
+            W = llem(A, (N, K, REG))
+
+            Performs locally linear embedding (LLE) on dataset A, keeping N dimensions, using K neighbors
+            and REG being the regularization parameter.
+
+            Example:
+            a = read_mat("cigars")
+            w = llem(a, (1, 3, 0.001))
+            b = a*w
+    """
+
+    if not isinstance(task, str):
+        out = prmapping(llem, task, x)
+        return out
+    if task == 'untrained':
+        # just return the name, and hyperparameters
+        if x is None:
+            n = 1
+            neighbors = 5
+            reg = 0.01
+        else:
+            n = x[0]
+            neighbors = x[1]
+            reg = x[2]
+        lle = LocallyLinearEmbedding(n_components=n, n_neighbors=neighbors, reg=reg)
+        return 'Locally Linear Embedding', lle
+
+    elif task == "train":
+        # we are going to train the mapping
+        X = +x
+        lle = copy.deepcopy(w)
+        lle.fit(X)
+        return lle, range(lle.embedding_.shape[1])
+
+    elif task == "eval":
+        # we are applying to new data
+        lle = w.data
+        pred = lle.transform(+x)
+        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
+            pred = pred[:, numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for lle.')
+
+
+def isomapm(task=None, x=None, w=None):
+    """
+            Isometric Mapping
+
+            W = llem(A, (N, K))
+
+            Performs isometric mapping on dataset A, keeping N dimensions, using K neighbors.
+
+            Example:
+            a = read_mat("cigars")
+            w = isomapm(a, (1, 3))
+            b = a*w
+    """
+
+    if not isinstance(task, str):
+        out = prmapping(isomapm, task, x)
+        return out
+    if task == 'untrained':
+        # just return the name, and hyperparameters
+        if x is None:
+            n = 1
+            neighbors = 5
+        else:
+            n = x[0]
+            neighbors = x[1]
+        isomap = Isomap(n_components=n, n_neighbors=neighbors)
+        return 'Isomap', isomap
+
+    elif task == "train":
+        # we are going to train the mapping
+        X = +x
+        isomap = copy.deepcopy(w)
+        isomap.fit(X)
+        return isomap, range(isomap.embedding_.shape[1])
+
+    elif task == "eval":
+        # we are applying to new data
+        isomap = w.data
+        pred = isomap.transform(+x)
+        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
+            pred = pred[:, numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for isomap.')
 
 def featselb(task=None, x=None, w=None):
     """
@@ -2199,3 +2439,4 @@ def feateval(a, x=None):
             D = D + sys.float_info.max * numpy.eye(len(unique_classes))
             metric = numpy.min(D)
     return metric
+
