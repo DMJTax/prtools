@@ -25,6 +25,9 @@ A (small) subset of the methods are:
     ridger    ridgeregression
     lassor    LASSO
 
+    kmeans    K-Means clustering
+    hclust    Hierarchical Clustering clustering
+
     labeld    labeling objects
     testc     test classifier
     testr     test regressor
@@ -49,12 +52,24 @@ import copy
 
 import matplotlib.pyplot as plt
 import numpy
-from sklearn import linear_model
-from sklearn import svm
-from sklearn import tree
 
 from prtools.dataset import prdataset, genclass, genlab, gendat
 from prtools.mapping import prmapping
+
+from sklearn import linear_model
+from mlxtend.feature_selection import SequentialFeatureSelector
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.neighbors import KNeighborsClassifier, DistanceMetric
+from sklearn.model_selection import StratifiedKFold, LeaveOneOut
+from sklearn.metrics import davies_bouldin_score, accuracy_score
+from sklearn import svm
+from sklearn import tree
+from sklearn.decomposition import PCA, FastICA
+from sklearn.manifold import LocallyLinearEmbedding, Isomap
+
+import sys
+
 
 
 # === mappings ===============================
@@ -505,7 +520,8 @@ def ldc(task=None,x=None,w=None):
 
     Computation of the linear classifier between the classes of the
     dataset A by assuming normal densities with equal covariance
-    matrices.
+    matrices. The covariance matrix can be regularized by adding REG to
+    the diagonal of the matrix.
     """
 
     if x is None:  # no regularization of the cov.matrix
@@ -515,6 +531,16 @@ def ldc(task=None,x=None,w=None):
     return u
 
 def qdc(task=None,x=None,w=None):
+    """
+    Quadratic discriminant classifier
+
+          W = qdc(A,REG)
+
+    Computation of the quadratic classifier between the classes of the
+    dataset A by assuming normal densities with different covariance
+    matrices per class. The covariance matrices can be regularized by
+    adding REG to the diagonal of the matrices.
+    """
     if x is None:
         x = [0.]
     u = gaussm(task,('full',x))*bayesrule()
@@ -522,7 +548,14 @@ def qdc(task=None,x=None,w=None):
     return u
 
 def nmc(task=None,x=None,w=None):
-    "Nearest mean classifier"
+    """
+    Nearest mean classifier
+
+          W = nmc(A)
+
+    Computation of the nearest mean classifier between the classes in
+    the dataset A.
+    """
     if not isinstance(task,str):
         return prmapping(nmc,task,x)
     if (task=='untrained'):
@@ -545,7 +578,14 @@ def nmc(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for nmc.')
 
 def fisherc(task=None,x=None,w=None):
-    "Fisher classifier"
+    """
+    Fisher's Least Square Linear Discriminant
+
+          W = fisherc(A)
+
+    Finds the linear discriminant function between the classes in the 
+    dataset A by minimizing the errors in the least square sense.
+    """
     if not isinstance(task,str):
         out = prmapping(fisherc,task,x)
         return out
@@ -592,7 +632,15 @@ def fisherc(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for fisherc.')
 
 def knnm(task=None,x=None,w=None):
-    "k-Nearest neighbor classifier"
+    """
+    K-Nearest Neighbor density estimation
+
+          W = knnm(A,K)
+
+    A density estimator is constructed based on the k-Nearest Neighbour rule
+    using the objects in A.
+    Default: K=1
+    """
     if not isinstance(task,str):
         return prmapping(knnm,task,x)
     if (task=='untrained'):
@@ -626,6 +674,14 @@ def knnm(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for knnc.')
 
 def knnc(task=None,x=None,w=None):
+    """
+    K-Nearest Neighbor Classifier
+
+          W = knnc(A,K)
+
+    Computation of the K-nearest neighbor classifier for the dataset A. 
+    Default: K=1
+    """
     return knnm(task,x)*bayesrule()
 
 def parzenm(task=None,x=None,w=None):
@@ -1125,8 +1181,8 @@ def svc(task=None,x=None,w=None):
             clf = svm.SVC(kernel='poly',degree=x,gamma='auto',coef0=1.,C=C,probability=True)
             #clf = svm.SVC(kernel='poly',gamma=x,C=C,probability=True)
         else:
-            print("Supplied kernel is unknown, use RBF instead.")
-            clf = svm.SVC(kernel='rbf',gamma=x,C=C,probability=True)
+            #print("Supplied kernel is unknown, use RBF instead.")
+            clf = svm.SVC(kernel='rbf',gamma=1./(x*x),C=C,probability=True)
         return 'Support vector classifier', clf
     elif (task=="train"):
         # we are going to train the mapping
@@ -1377,7 +1433,7 @@ def clevalf(a,u,trainsize=0.6,nrreps=5,testfunc=testc):
     err = numpy.zeros((dim,nrreps))
     err_app = numpy.zeros((dim,nrreps))
     for f in range(nrreps):
-        #print("Clevalf: iteration %d." % f)
+        # print("Clevalf: iteration %d." % f)
         for i in range(1,dim):
             x,z = gendat(a[:,:i], trainsize,seed=f)
             w = x*u
@@ -1424,7 +1480,27 @@ def vandermondem(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for vandermondem.')
 
 def linearr(task=None,x=None,w=None):
-    "Linear regression"
+    """
+    Linear Regression 
+
+           w = linearr(A)
+           w = linearr(A,ORDER)
+
+    Fit an ordinary least squares regression on dataset A.
+    The optional second input argument, ORDER, allows for the mapping of
+    the original data X to all X^N with 0<n<ORDER
+
+    Example:
+    n = 100
+    x = numpy.random.rand(n,1)
+    y = 0.3*x + 0.1*numpy.random.randn(n,1)
+    a = gendatr(x,y)
+    w = linearr(a)
+    w3 = linearr(a,3)
+    scatterr(a)
+    plotr(w)
+    plotr(w3)
+    """
     if not isinstance(task,str):
         out = prmapping(linearr,task,x)
         return out
@@ -1450,7 +1526,23 @@ def linearr(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for linearr.')
 
 def ridger(task=None,x=None,w=None):
-    "Ridge regression"
+    """
+    Ridge Regression 
+
+           w = ridger(A,LAMB)
+
+    Train a ridge regression on dataset A with regularisation parameter
+    LAMB.
+
+    Example:
+    n = 100
+    x = numpy.random.rand(n,1)
+    y = 0.3*x + 0.1*numpy.random.randn(n,1)
+    a = gendatr(x,y)
+    w = ridger(a,(0.1))
+    scatterr(a)
+    plotr(w)
+    """
     if not isinstance(task,str):
         out = prmapping(ridger,task,x)
         return out
@@ -1463,7 +1555,7 @@ def ridger(task=None,x=None,w=None):
         # we are going to train the mapping
         n,dim = x.shape
         dat = numpy.hstack((+x,numpy.ones((n,1))))
-        Sinv = numpy.linalg.inv(dat.T.dot(dat) + w*numpy.eye(dim))
+        Sinv = numpy.linalg.inv(dat.T.dot(dat) + w*numpy.eye(dim+1))
         beta = Sinv.dot(dat.T).dot(x.targets)
         # store the parameters, and labels:
         return beta,['target']
@@ -1477,7 +1569,20 @@ def ridger(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for ridger.')
 
 def kernelr(task=None,x=None,w=None):
-    "Kernel regression"
+    """
+    Kernel Regression 
+
+           w = kernelr(A,SIGM)
+
+    Fit a kernel regression with width parameter SIGM to regression
+    dataset A.
+
+    Example:
+    a = gendatsinc(100)
+    w = kernelr(a,0.4)
+    scatterr(a)
+    plotr(w)
+    """
     if not isinstance(task,str):
         out = prmapping(kernelr,task,x)
         return out
@@ -1504,7 +1609,23 @@ def kernelr(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for kernelr.')
 
 def lassor(task=None,x=None,w=None):
-    "LASSO regression"
+    """
+    LASSO Regression 
+
+           w = lassor(A,LAMB)
+
+    Train a LASSO regression on dataset A with regularisation parameter
+    LAMB.
+
+    Example:
+    n = 100
+    x = numpy.random.rand(n,1)
+    y = 0.3*x + 0.1*numpy.random.randn(n,1)
+    a = gendatr(x,y)
+    w = lassor(a,(0.1))
+    scatterr(a)
+    plotr(w)
+    """
     if not isinstance(task,str):
         out = prmapping(lassor,task,x)
         return out
@@ -1532,7 +1653,17 @@ def lassor(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for lassor.')
 
 def testr(task=None,x=None,w=None):
-    "Test regressor"
+    """
+        MSE for regression
+
+               e = testr(X)
+
+        Compute the Mean squared error error on dataset X.
+
+        Example:
+        a = pr.gendatb([20, 20])
+        e = testr(a)
+    """
     if not isinstance(task,str):
         out = prmapping(testr)
         out.mapping_type = "trained"
@@ -1556,12 +1687,56 @@ def testr(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for testr.')
 
-def hclust(D,ctype='s',k=0):
-    D = +D
-    sz = shape(D)
-    if (sz[0]!=sz[1]):
-        raise ValueError('Distance matrix should be square.')
-    return 0
+def hclust(task=None, x=None, w=None):
+    """
+    Hierarchical Clustering clustering
+
+           w = hclust(A, (K, TYPE))
+
+    Train the Hierarchical clustering algorithm on dataset A,
+    using K clusters and TYPE clustering criterion.
+
+    The following clustering criteria TYPE are defined:
+    'single'    uses the minimum of the distances between all observations of the two sets (default)
+    'complete'  uses the maximum distances between all observations of the two sets
+    'average'   uses the average of the distances of each observation of the two sets
+
+    Example:
+    a = gendat()
+    w = hclust(a, (2, 'average'))
+    """
+    if not isinstance(task,str):
+        out = prmapping(hclust,x)
+        out.mapping_type = "trained"
+        if task is not None:
+            out = out(task)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        print('untrained :::')
+        if x is None:
+            k = 2
+            link = 'single'
+        else:
+            k = x[0]
+            link = x[1]
+        cluster = AgglomerativeClustering(n_clusters=k, linkage=link)
+        print(cluster)
+        return 'Hierarchical clustering', cluster
+    elif (task=="train"):
+        # this mapping cannot be trained so return nothing.
+        return None,0
+    elif (task=="eval"):
+        # we are applying to new data
+        cluster = w.hyperparam
+        cluster.fit(+x)
+        pred = cluster.labels_
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for hierarchical clustering.')
 
 
 def gendats(n,dim=2,delta=2.):
@@ -1614,6 +1789,18 @@ def gendatd(n,dim=2,delta=2.):
     return out
 
 def gendatb(n=(50,50),s=1.0):
+    """
+    Generation of a banana shaped classes
+
+        A = gendatb(N,S)
+
+    Generate a two-dimensional, two-class dataset A of N objects with a
+    banana shaped distribution. The data is uniformly distributed along
+    the bananas and is superimposed with a normal distribution with
+    standard deviation S in all directions. Class priors are P(1) = P(2)
+    = 0.5.
+    Defaults: N = [50,50], S = 1.
+    """
     r = 5
     prior = [0.5,0.5]
     N = genclass(n,prior)
@@ -1634,6 +1821,20 @@ def gendatb(n=(50,50),s=1.0):
     return out
 
 def gendatc(n=(50,50),dim=2,mu=0.):
+    """
+    Generation of two spherical classes with different variances
+
+        A = gendatc(N,DIM,MU)
+
+    Generation of a DIM-dimensional 2-class dataset A of N objects.  Both
+    classes are spherically Gaussian distributed.
+
+    Class 1 has the identity matrix as covariance matrix and mean MU. If
+    U is a scalar then [U,0,0,..] is used as class mean.  Class 2 has
+    also the identity matrix as covariance matrix, except for a variance
+    of 4 for the first two features. Its mean is 0.  Class priors are
+    P(1) = P(2) = 0.5.
+    """
     prior = [0.5,0.5]
     N = genclass(n,prior)
 
@@ -1652,6 +1853,19 @@ def gendatc(n=(50,50),dim=2,mu=0.):
     return out
 
 def gendath(n=(50,50)):
+    """
+    Generation of Highleyman classes
+
+        A = gendath(N)
+
+    Generation of a 2-dimensional 2-class dataset A of N objects
+    according to Highleyman. 
+
+    The two Highleyman classes are defined by 
+    1: Gauss([1 1],[1 0; 0 0.25]).
+    2: Gauss([2 0],[0.01 0; 0 4]).
+    Class priors are P(1) = P(2) = 0.5 
+    """
     prior = [0.5,0.5]
     N = genclass(n,prior)
     x0 = numpy.random.randn(N[0],2)
@@ -1683,6 +1897,14 @@ def gendats3(n,dim=2,delta=2.):
     return out
 
 def gendatsinc(n=25,sigm=0.1):
+    """
+    Generation of Sinc data
+
+        A = gendatsinc(N,SIGMA)
+
+    Generate the standard 1D Sinc data containing N objects, with Gaussian
+    noise with standard deviation SIGMA. 
+    """
     x = -5. + 10.*numpy.random.rand(n,1)
     y = numpy.sin(numpy.pi*x)/(numpy.pi*x) + sigm*numpy.random.randn(n,1)
     out = prdataset(x,y)
@@ -1713,5 +1935,514 @@ def boomerangs(n=100):
     a.prior = p
     return a
 
+def kmeans(task=None, x=None, w=None):
+    """
+    K-Means clustering
 
+           w = kmeans(A, (K, MAXIT, INIT))
+
+    Train the K-Means clustering algorithm on dataset A, using K clusters,
+    with maximum number of iterations MAXIT and INIT initialization method.
+
+    The following initializations methods INIT are defined:
+    'k-means++'    selects initial cluster centers for k-mean clustering in a smart way to speed up convergence (default)
+    'random'       take at random K objects as initial means
+
+    Example:
+    a = gendat()
+    w = kmeans(a, (3, 150, 'random'))
+    """
+    if not isinstance(task,str):
+        out = prmapping(kmeans, task, x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            k = 8
+            maxit = 300
+            init_centers = 'k-means++'
+        else:
+            k = x[0]
+            maxit = x[1]
+            init_centers = x[2]
+        cluster = KMeans(n_clusters=k, max_iter=maxit, init=init_centers)
+        return 'K-Means clustering', cluster
+    elif (task=="train"):
+        # we are going to train the mapping
+        X = +x
+        cluster = copy.deepcopy(w)
+        cluster.fit(X)
+        return cluster, ['clusterID']
+    elif (task=="eval"):
+        # we are applying to new data
+        cluster = w.data
+        pred = cluster.predict(+x)
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for kmeans.')
+
+
+def dbi(a, lab):
+    """
+        Davies-Bouldin Index
+
+               e = dbi(A, Y)
+
+        Computes the Davies-Bouldin score for features A
+        and clustering labels Y.
+
+        Example:
+        a = gendat()
+        w = kmeans(a, (3, 150, 'random'))
+        y = w.eval(a)
+        e = dbi(a, y)
+    """
+    with numpy.errstate(divide='ignore', invalid='ignore'):  # ignore division by zero warnings and invalid values
+        e = davies_bouldin_score(a, lab.ravel())
+        print('Davies-Bouldin Index:', e)
+        return e
+
+def pcam(task=None, x=None, w=None):
+    """
+    Principal Component Analysis
+
+    W = pcam(A, N)
+
+    Performs principal component analysis (PCA) on dataset A, keeping N (by default 1) dimensions.
+
+    Example:
+    a = read_mat("cigars")
+    w = pcam(a, 1)
+    b = a*w
+    """
+
+    if not isinstance(task, str):
+        out = prmapping(pcam, task, x)
+        return out
+    if task == 'untrained':
+        # just return the name, and hyperparameters
+        if x is None:
+            n = 1
+        else:
+            n = x
+        pca = PCA(n_components=n)
+        return 'Principal Component Analysis', pca
+
+    elif task == "train":
+        # we are going to train the mapping
+        X = +x
+        pca = copy.deepcopy(w)
+        pca.fit(X)
+        return pca, range(pca.n_components_)
+
+    elif task == "eval":
+        # we are applying to new data
+        pca = w.data
+        pred = pca.transform(+x)
+        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
+            pred = pred[:, numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for pcam.')
+
+
+def icam(task=None, x=None, w=None):
+    """
+    Independent Component Analysis
+
+    W = icam(A, N)
+
+    Performs independent component analysis (ICA) on dataset A, keeping N (by default 1) dimensions.
+
+    Example:
+    a = read_mat("cigars")
+    w = pcam(a, 1)
+    b = a*w
+    """
+
+    if not isinstance(task, str):
+        out = prmapping(icam, task, x)
+        return out
+    if task == 'untrained':
+        # just return the name, and hyperparameters
+        if x is None:
+            n = 1
+        else:
+            n = x
+        ica = FastICA(n_components=n)
+        return 'Independent Component Analysis', ica
+
+    elif task == "train":
+        # we are going to train the mapping
+        X = +x
+        ica = copy.deepcopy(w)
+        ica.fit(X)
+        return ica, range(ica.components_.shape[0])
+
+    elif task == "eval":
+        # we are applying to new data
+        ica = w.data
+        pred = ica.transform(+x)
+        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
+            pred = pred[:, numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for icam.')
+
+
+def fisherm(task=None, x=None, w=None):
+    """
+        Linear Discriminant Analysis
+
+        W = fisherm(A, N)
+
+        Performs linear discriminant analysis (LDA) on dataset A, keeping N < C (by default min(C, K) - 1) dimensions,
+        where C is the number of classes and K the number of features in A.
+
+        Example:
+        a = read_mat("cigars")
+        w = fisherm(a, 1)
+        b = a*w
+        """
+    if not isinstance(task, str):
+        out = prmapping(fisherm, task, x)
+        return out
+    if task == 'untrained':
+        # just return the name, and hyperparameters
+        if x is None:
+            n = 1
+        else:
+            n = x
+        fisher = LinearDiscriminantAnalysis(n_components=n)
+        return 'Linear Discriminant Analysis', fisher
+
+    elif task == "train":
+        # we are going to train the mapping
+        X = +x
+        lab = x.targets
+        fisher = copy.deepcopy(w)
+
+        fisher.fit(X, lab.ravel())
+        return fisher, range(len(fisher.coef_))
+
+    elif task == "eval":
+        # we are applying to new data
+        fisher = w.data
+        pred = fisher.transform(+x)
+        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
+            pred = pred[:, numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for fisherm.')
+
+
+def llem(task=None, x=None, w=None):
+    """
+            Locally Linear Embedding
+
+            W = llem(A, (N, K, REG))
+
+            Performs locally linear embedding (LLE) on dataset A, keeping N dimensions, using K neighbors
+            and REG being the regularization parameter.
+
+            Example:
+            a = read_mat("cigars")
+            w = llem(a, (1, 3, 0.001))
+            b = a*w
+    """
+
+    if not isinstance(task, str):
+        out = prmapping(llem, task, x)
+        return out
+    if task == 'untrained':
+        # just return the name, and hyperparameters
+        if x is None:
+            n = 1
+            neighbors = 5
+            reg = 0.01
+        else:
+            n = x[0]
+            neighbors = x[1]
+            reg = x[2]
+        lle = LocallyLinearEmbedding(n_components=n, n_neighbors=neighbors, reg=reg)
+        return 'Locally Linear Embedding', lle
+
+    elif task == "train":
+        # we are going to train the mapping
+        X = +x
+        lle = copy.deepcopy(w)
+        lle.fit(X)
+        return lle, range(lle.embedding_.shape[1])
+
+    elif task == "eval":
+        # we are applying to new data
+        lle = w.data
+        pred = lle.transform(+x)
+        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
+            pred = pred[:, numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for lle.')
+
+
+def isomapm(task=None, x=None, w=None):
+    """
+            Isometric Mapping
+
+            W = llem(A, (N, K))
+
+            Performs isometric mapping on dataset A, keeping N dimensions, using K neighbors.
+
+            Example:
+            a = read_mat("cigars")
+            w = isomapm(a, (1, 3))
+            b = a*w
+    """
+
+    if not isinstance(task, str):
+        out = prmapping(isomapm, task, x)
+        return out
+    if task == 'untrained':
+        # just return the name, and hyperparameters
+        if x is None:
+            n = 1
+            neighbors = 5
+        else:
+            n = x[0]
+            neighbors = x[1]
+        isomap = Isomap(n_components=n, n_neighbors=neighbors)
+        return 'Isomap', isomap
+
+    elif task == "train":
+        # we are going to train the mapping
+        X = +x
+        isomap = copy.deepcopy(w)
+        isomap.fit(X)
+        return isomap, range(isomap.embedding_.shape[1])
+
+    elif task == "eval":
+        # we are applying to new data
+        isomap = w.data
+        pred = isomap.transform(+x)
+        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
+            pred = pred[:, numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for isomap.')
+
+def featselb(task=None, x=None, w=None):
+    """
+    Trainable mapping for backward feature selection
+
+           w = featselb(A, (CLF, K, N))
+
+    Backward selection of K features using the dataset A. CLF corresponds to the classifier that will be used
+    to evaluate the accuracy of the subsets. The number of cross-validation folds N has to be provided.
+    w.targets can be used to view the selected features.
+
+    The following classifiers CLF are defined:
+    '1NN'    1 Nearest Neightbour (default)
+    'LDA'    Linear Discriminant Analysis
+
+    Example:
+    a = gendat()
+    w = featselb(a, ('1NN', 4, 10))
+    """
+    return featsel(task, (x[0], x[1], False, x[2]), w)
+
+def featself(task=None, x=None, w=None):
+    """
+    Trainable mapping for forward feature selection
+
+           w = featself(A, (CLF, K, N))
+
+    Forward selection of K features using the dataset A. CLF corresponds to the classifier that will be used
+    to evaluate the accuracy of the subsets. The number of cross-validation folds N has to be provided.
+    w.targets can be used to view the selected features.
+
+    The following classifiers CLF are defined:
+    '1NN'    1 Nearest Neightbour (default)
+    'LDA'    Linear Discriminant Analysis
+
+    Example:
+    a = gendat()
+    w = featself(a, ('1NN', 4, 10))
+    """
+    return featsel(task, (x[0], x[1], True, x[2]), w)
+
+def featsel(task=None, x=None, w=None):
+    """
+    Sequential Feature Selector
+
+           w = featsel(A, (CLF, K, FORWARD, N))
+
+    Selection of K features using the dataset A. CLF corresponds to the classifier that will be used
+    to evaluate the accuracy of the subsets. FORWARD can be set to True for forward feature selection
+    or False for backward feature selection. The number of cross-validation folds N has to be provided.
+
+    The following classifiers CLF are defined:
+    '1NN'    1 Nearest Neightbour (default)
+    'LDA'    Linear Discriminant Analysis
+
+    Example:
+    a = gendat()
+    w = featsel(a, ('1NN', 4, True, 10))
+    """
+    if not isinstance(task,str):
+        out = prmapping(featsel, task, x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            clf = '1NN'
+            features = 1
+            setting = False
+            folds = 10
+        else:
+            clf = x[0]
+            features = x[1]
+            setting = x[2]
+            folds = x[3]
+        if clf == '1NN':
+            clf = KNeighborsClassifier(n_neighbors=1)
+        if clf == 'LDA':
+            clf = LinearDiscriminantAnalysis()
+        sfs = SequentialFeatureSelector(clf, k_features=features, forward=setting, floating=False,
+                                        verbose=0, scoring='accuracy', cv=folds)
+        return 'Sequential Feature Selector', sfs
+    elif (task=="train"):
+        # we are going to train the mapping
+        X = +x
+        y = x.targets
+        sfs = copy.deepcopy(w)
+        sfs = sfs.fit(X, y.ravel())
+        return sfs, sfs.k_feature_idx_
+    elif (task=="eval"):
+        # we are applying to new data
+        sfs = w.data
+        pred = x[:, list(sfs.k_feature_idx_)]
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for feature selector.')
+
+def featseli(task=None, x=None, w=None):
+    """
+    Trainable mapping for individual feature selection
+
+     w = featseli(A, (CLF, K, N))
+
+    Individual selection of K features using the dataset A. CLF corresponds to the classifier that will be used
+    to evaluate the accuracy achieved via each feature individually. The number of cross-validation folds N has
+    to be provided. w.targets can be used to view the selected features.
+
+    The following classifiers CLF are defined:
+    '1NN'    1 Nearest Neightbour (default)
+    'LDA'    Linear Discriminant Analysis
+
+    Example:
+    a = gendat()
+    w = featseli(a, ('1NN', 4, 10))
+    """
+    if not isinstance(task,str):
+        out = prmapping(featseli, task, x)
+        return out
+    if (task=='untrained'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x[0] = '1NN'
+            x[1] = 1
+            x[2] = 10
+        return 'Individual Feature Selector', x
+    elif (task=="train"):
+        # we are going to train the mapping
+        X = +x
+        y = x.targets
+        fs = copy.deepcopy(w)
+        if w[0] == '1NN':
+            clf = KNeighborsClassifier(n_neighbors=1)
+        if w[0] == 'LDA':
+            clf = LinearDiscriminantAnalysis()
+        skf = StratifiedKFold(n_splits=w[2])
+        feat_accuracy = []  # average classification accuracy per individual feature
+        # For every feature individually
+        for feat in range(X.shape[1]):
+            feat_accuracy_per_fold = []  # accuracy for specific feature per fold
+            # Perform k-fold cross validation
+            for train_index, test_index in skf.split(X, y):
+                # Stratified train-test splits
+                X_train, X_test = X[train_index, feat], X[test_index, feat]
+                y_train, y_test = y[train_index], y[test_index]
+                clf.fit(X_train.reshape(-1, 1), y_train.ravel())
+                y_pred = clf.predict(X_test.reshape(-1, 1))
+                feat_accuracy_per_fold.append(accuracy_score(y_test, y_pred))
+            feat_accuracy.append(numpy.mean(feat_accuracy_per_fold))
+        sorted_idx = numpy.argsort(feat_accuracy)  # list is sorted in ascending order, return K last elements
+        return fs, sorted_idx[-w[1]:]
+    elif (task=="eval"):
+        # we are applying to new data
+        pred = x[:, w.targets]
+        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
+            pred = pred[:,numpy.newaxis]
+        return pred
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for feature selector.')
+
+def feateval(a, x=None):
+    """
+    Evaluation of feature set for classification
+
+     J = feateval(A, CRIT)
+
+    Evaluation of features by the criterion CRIT, using objects in the dataset A.
+    The larger J, the better. Resulting J-values are incomparable over the various methods.
+
+    The following CRIT methods are defined:
+    '1NN'    1 Nearest Neightbou classification performance (default)
+    'eucl-s'    sum of squared Euclidean distances
+    'eucl-m'    minimum of squared Euclidean distances
+
+    Example:
+    a = gendat()
+    e = feateval(a, 'eucl-s')
+    """
+    X = +a
+    y = a.targets
+    if x == '1NN':
+        clf = KNeighborsClassifier(n_neighbors=1)
+        loo = LeaveOneOut()
+        loo.get_n_splits(X)
+        accuracy_per_fold = []
+        # Leave-one-out for 1NN
+        for train_index, test_index in loo.split(X):
+            X_train, X_test = X[train_index], X[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+            clf.fit(X_train, y_train.ravel())
+            y_pred = clf.predict(X_test)
+            accuracy_per_fold.append(accuracy_score(y_test, y_pred))
+        metric = numpy.mean(accuracy_per_fold)
+    elif x == 'eucl-s' or x == 'eucl-m':
+        U = []
+        unique_classes = numpy.unique(y)
+        for lab in unique_classes:
+            U.append(numpy.mean(X[numpy.where(y == lab)[0], :], axis=0))
+        dist = DistanceMetric.get_metric('euclidean')
+        D = numpy.power(dist.pairwise(U), 2)
+        if x == 'eucl-s':
+            metric = numpy.sum(D)/2
+        elif x == 'eucl-m':
+            D = D + sys.float_info.max * numpy.eye(len(unique_classes))
+            metric = numpy.min(D)
+    return metric
 

@@ -8,6 +8,7 @@ import copy
 
 import matplotlib.pyplot as plt
 import numpy
+from sklearn import linear_model
 
 from .dataset import prdataset
 
@@ -154,6 +155,20 @@ class prmapping(object):
         else:
             return NotImplemented
 
+    def float(self):
+        # Print the values of w and the intercept
+        if(isinstance(self.data, numpy.ndarray)):
+            return self.data.copy()
+        elif(isinstance(self.data, linear_model.Lasso)):
+            coef = self.data.coef_.reshape(self.data.coef_.size, 1)
+            intercept = self.data.intercept_
+            return numpy.vstack((coef, intercept))
+        else:
+            raise ValueError('Mapping has no way to print values (yet)')
+    
+    def __pos__(self):
+        return self.float()
+
 
 def sequentialm(task=None,x=None,w=None):
     "Sequential mapping"
@@ -233,6 +248,19 @@ def sequentialm(task=None,x=None,w=None):
 # === useful functions =====================================
 
 def plotc(f,levels=[0.0],colors=None,gridsize = 30):
+    """
+    Plot decision boundary
+
+        plotc(W)
+
+    Plot the decision boundary of trained classifier W
+
+    Example:
+    a = gendatb(100)
+    w = parzenc(a)
+    scatterd(a)
+    plotc(w)
+    """
     ax = plt.gca()
     if colors is None:
         colors = next(ax._get_lines.prop_cycler)['color']
@@ -260,6 +288,19 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
         plt.contour(x,y,z,levels,colors=colors)
 
 def plotm(f,nrlevels=10,colors=None,gridsize = 30):
+    """
+    Plot mapping outputs
+
+        plotm(W)
+
+    Plot the output of mapping W.
+
+    Example:
+    a = gendatb(100)
+    w = parzenm(a)
+    scatterd(a)
+    plotm(w)
+    """
     ax = plt.gca()
     if colors is None:
         colors = next(ax._get_lines.prop_cycler)['color']
@@ -292,12 +333,40 @@ def plotm(f,nrlevels=10,colors=None,gridsize = 30):
         plt.contour(x,y,z,levels,colors=colors)
 
 def plotr(f,color=None,gridsize=100):
+    """
+    Plot regression outputs
+
+        plotr(W)
+
+    Plot the output of regressor W.
+
+    Example:
+    a = gendatsinc(100)
+    w = kernelr(a,0.5)
+    scatterr(a)
+    plotr(w)
+    """
     ax = plt.gca()
     if color is None:
         color = next(ax._get_lines.prop_cycler)['color']
     xl = ax.get_xlim()
     dx = (xl[1]-xl[0])/(gridsize-1)
-    x = numpy.arange(xl[0],xl[1]+0.01*dx,dx)
-    xx = prdataset(x[:,numpy.newaxis])
-    y = +f(xx)
-    plt.plot(x,y,color=color)
+    if (f.shape[0]==1):
+        x = numpy.arange(xl[0],xl[1]+0.01*dx,dx)
+        xx = prdataset(x[:,numpy.newaxis])
+        y = +f(xx)
+        plt.plot(x,y,color=color)
+    elif (f.shape[0]==2):
+        yl = ax.get_ylim()
+        dy = (yl[1]-yl[0])/(gridsize-1)
+        x = numpy.arange(xl[0],xl[1]+0.1*dx,dx)
+        y = numpy.arange(yl[0],yl[1]+0.1*dy,dy)
+        X0,X1 = numpy.meshgrid(x,y)
+        X0.shape = (gridsize*gridsize, 1)
+        X1.shape = (gridsize*gridsize, 1)
+        dat = numpy.hstack((X0,X1))
+        X0.shape = (gridsize,gridsize)
+        X1.shape = (gridsize,gridsize)
+        out = +f(dat)
+        out.shape = (gridsize,gridsize)
+        ax.plot_wireframe(X0,X1,out)

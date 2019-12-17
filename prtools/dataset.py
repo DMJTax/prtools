@@ -9,6 +9,8 @@ import copy
 import matplotlib.pyplot as plt
 import numpy
 
+from scipy.cluster import hierarchy
+from mpl_toolkits import mplot3d
 
 # === prdataset ============================================
 class prdataset(object):
@@ -48,17 +50,20 @@ class prdataset(object):
             outstr = "%s %d by %d prdataset" % (self.name,sz[0],sz[1])
         else:
             outstr = "%d by %d prdataset" % (sz[0],sz[1])
-        cnt = self.classsizes()
-        nrcl = len(cnt)
-        if (nrcl==0):
-            outstr += " with no targets"
-        elif (nrcl==1):
-            outstr += " with 1 class: [%d]"%sz[0]
-        else:
-            outstr += " with %d classes: [%d"%(nrcl,cnt[0])
-            for i in range(1,nrcl):
-                outstr += " %d"%cnt[i]
-            outstr += "]"
+        if (self.targettype=='crisp'):
+            cnt = self.classsizes()
+            nrcl = len(cnt)
+            if (nrcl==0):
+                outstr += " with no targets"
+            elif (nrcl==1):
+                outstr += " with 1 class: [%d]"%sz[0]
+            else:
+                outstr += " with %d classes: [%d"%(nrcl,cnt[0])
+                for i in range(1,nrcl):
+                    outstr += " %d"%cnt[i]
+                outstr += "]"
+        elif (self.targettype=='regression'):
+            outstr += " with continuous targets."
         return outstr
 
     def float(self):
@@ -137,6 +142,8 @@ class prdataset(object):
         return self
 
     def classsizes(self):
+        if (self.targettype=='regression'):
+            return None
         try:       # in older versions of numpy the 'count' is not available
             (k,count) = numpy.unique(numpy.array(self.targets),return_counts=True)
         except:
@@ -280,11 +287,55 @@ def scatter3d(a):
     plt.winter()
 
 def scatterr(a):
-    plt.scatter(a.data[:,0],a.targets)
-    plt.title(a.name)
-    plt.xlabel('Feature '+str(a.featlab[0]))
-    plt.ylabel('Target')
-    plt.winter()
+    sz = a.data.shape
+    if (sz[1]==1):
+        plt.scatter(a.data[:,0],a.targets)
+        plt.title(a.name)
+        plt.xlabel('Feature '+str(a.featlab[0]))
+        plt.ylabel('Target')
+        plt.winter()
+    elif (sz[1]==2):
+        ax = plt.axes(projection='3d')
+        ax.scatter3D(a.data[:,0],a.data[:,1],a.targets)
+        ylab = a.featlab[1]
+        plt.title(a.name)
+        ax.set_xlabel('Feature '+str(a.featlab[0]))
+        ax.set_ylabel('Feature '+str(ylab))
+        ax.set_zlabel('Targets')
+    else:
+        raise ValueError('Please supply at least 2D data.')
+
+def dendro(X, link):
+    """
+    Plots the hierarchical clustering as a dendrogram
+    :param X: prdataset feature vectors
+    :param link: linkage type to be used for the dendogram generation
+    """
+    z = hierarchy.linkage(X, link)
+    plt.figure()
+    dn = hierarchy.dendrogram(z, orientation='top', show_leaf_counts=True)
+    plt.show()
+    return dn
+
+def fusion_graph(X, link):
+    """
+    Plots the hierarchical clustering fusion graph. This functions also
+    plots the dendrogram out of which the fusion graph is generated
+    :param X: prdataset feature vectors
+    :param link: linkage type to be used for the fusion graph generation
+    """
+    dn = dendro(X, link)
+    # Compute fusion levels and number of clusters
+    fusion_levels = [el[1] for el in dn['dcoord']]
+    fusion_levels = sorted(fusion_levels, key=float, reverse=True)  # sort in descending order
+    clusters = [c + 1 for c in range(len(fusion_levels))]
+    # Plot fusion graph
+    plt.plot(clusters, fusion_levels, 'o-')
+    plt.xticks(numpy.arange(1, len(clusters) + 1, step=int(len(clusters)/5)))
+    plt.ylabel('Fusion level')
+    plt.xlabel('Number of clusters')
+    plt.title('Fusion graph')
+    plt.show()
 
 # === datasets ===============================
 def genclass(n,p):
@@ -364,3 +415,21 @@ def gendat(x,n,seed=None):
 
     return out,leftout
 
+def gendatr(x,targets):
+    """
+    Generate a regression dataset
+
+          a = gendatr(X,Y)
+
+    Generate a regression dataset from data matrix X and target values
+    Y. Data matrix X should be NxD, where N is the number of objects,
+    and D the feature dimensionality. Target Y should be Nx1.
+
+    Example:
+    x = numpy.random.randn(100,2)
+    y = numpy.sin(x[:,0])*numpy.sin(x[:,1])
+    a = gendatr(x,y)
+    """
+    a = prdataset(x,targets)
+    a.targettype = 'regression'
+    return a
