@@ -49,7 +49,6 @@ A (small) subset of datasets:
 """
 
 from prtools import *
-from mlxtend.feature_selection import SequentialFeatureSelector
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.neighbors import KNeighborsClassifier, DistanceMetric
@@ -63,6 +62,7 @@ from sklearn.decomposition import PCA, FastICA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.manifold import LocallyLinearEmbedding, Isomap
 
+from mlxtend.feature_selection import SequentialFeatureSelector
 import sys
 
 
@@ -1715,7 +1715,6 @@ def hclust(task=None, x=None, w=None):
             k = x[0]
             link = x[1]
         cluster = AgglomerativeClustering(n_clusters=k, linkage=link)
-        print(cluster)
         return 'Hierarchical clustering', cluster
     elif (task=="train"):
         # this mapping cannot be trained so return nothing.
@@ -1947,7 +1946,10 @@ def kmeans(task=None, x=None, w=None):
     w = kmeans(a, (3, 150, 'random'))
     """
     if not isinstance(task,str):
-        out = prmapping(kmeans, task, x)
+        out = prmapping(kmeans,x)
+        out.mapping_type = "trained"
+        if task is not None:
+            out = out(task)
         return out
     if (task=='untrained'):
         # just return the name, and hyperparameters
@@ -1962,15 +1964,13 @@ def kmeans(task=None, x=None, w=None):
         cluster = KMeans(n_clusters=k, max_iter=maxit, init=init_centers)
         return 'K-Means clustering', cluster
     elif (task=="train"):
-        # we are going to train the mapping
-        X = +x
-        cluster = copy.deepcopy(w)
-        cluster.fit(X)
-        return cluster, ['clusterID']
+        # this mapping cannot be trained, so return nothing
+        return None,0
     elif (task=="eval"):
         # we are applying to new data
-        cluster = w.data
-        pred = cluster.predict(+x)
+        cluster = w.hyperparam
+        cluster.fit(+x)
+        pred = cluster.labels_
         if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
             pred = pred[:,numpy.newaxis]
         return pred
