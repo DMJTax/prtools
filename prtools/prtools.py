@@ -1943,7 +1943,7 @@ def kmeans(task=None, x=None, w=None):
 
     Example:
     a = gendat()
-    w = kmeans(a, (3, 150, 'random'))
+    lab = kmeans(a, (3, 150, 'random'))
     """
     if not isinstance(task,str):
         out = prmapping(kmeans,x)
@@ -1990,12 +1990,11 @@ def dbi(a, lab):
 
         Example:
         a = gendat()
-        w = kmeans(a, (3, 150, 'random'))
-        y = w.eval(a)
+        y = kmeans(a, (3, 150, 'random'))
         e = dbi(a, y)
     """
     with numpy.errstate(divide='ignore', invalid='ignore'):  # ignore division by zero warnings and invalid values
-        e = davies_bouldin_score(a, lab.ravel())
+        e = davies_bouldin_score(+a, numpy.ravel(lab))
         print('Davies-Bouldin Index:', e)
         return e
 
