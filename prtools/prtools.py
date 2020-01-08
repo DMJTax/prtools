@@ -852,13 +852,17 @@ def mog(task=None,x=None,w=None):
         Z = numpy.zeros((k,1))
         for i in range(k):
             cv[:,:,i] = numpy.linalg.inv(cv[:,:,i])
-            Z[i] = iZ*numpy.linalg.det(cv[:,:,i])
+            Z[i] = iZ/numpy.linalg.det(cv[:,:,i])
 
         # return the parameters, and feature labels
         return (pr,mn,cv,Z), range(k)  # output p(x|k) per component
     elif (task=="eval"):
         # we are applying to new data
         W = w.data   # get the parameters out
+        # W[0] is the cluster prob.
+        # W[1] are the cluster means
+        # W[2] are the inverse cluster covariances
+        # W[3] are the normalisation constants for each cluster
         n,dim = x.shape
         k = W[1].shape[0]
         out = numpy.zeros((n,k))
