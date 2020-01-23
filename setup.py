@@ -1,4 +1,5 @@
 from setuptools import setup
+import os
 
 setup(
    name='prtools',
@@ -8,4 +9,7 @@ setup(
    author_email='',
    packages=['prtools'],
    install_requires=['sklearn', 'numpy', 'matplotlib', 'requests', 'mlxtend'],
+   package_data={
+      'prtools': [ os.path.join('data', '*.mat') ],
+   },
 )
