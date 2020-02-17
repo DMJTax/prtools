@@ -27,8 +27,8 @@ class prdataset(object):
         if targets is not None:
             if not isinstance(targets,(numpy.ndarray, numpy.generic)):
                 raise TypeError('Target vector should be a numpy matrix.')
-            if (data.shape[0]!=targets.shape[0]):
-                raise ValueError('Number of targets does not match number of data samples.')
+            assert (data.shape[0]==targets.shape[0]), \
+                    'Number of targets does not match number of data samples.'
             if (len(targets.shape)<2):
                 targets = targets[:,numpy.newaxis]  # SIGH
         else:
