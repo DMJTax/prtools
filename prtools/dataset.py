@@ -23,10 +23,10 @@ class prdataset(object):
         if not isinstance(data,(numpy.ndarray, numpy.generic)):
             data = numpy.array(data,ndmin=2)
             if not isinstance(data,(numpy.ndarray, numpy.generic)):
-                raise ValueError('Data matrix should be a numpy matrix.')
+                raise TypeError('Data matrix should be a numpy matrix.')
         if targets is not None:
             if not isinstance(targets,(numpy.ndarray, numpy.generic)):
-                raise ValueError('Target vector should be a numpy matrix.')
+                raise TypeError('Target vector should be a numpy matrix.')
             if (data.shape[0]!=targets.shape[0]):
                 raise ValueError('Number of targets does not match number of data samples.')
             if (len(targets.shape)<2):
@@ -173,7 +173,7 @@ class prdataset(object):
             newd.data = newd.data[:,key[1]] # ndarrays can handle it
             newd.featlab = [newd.featlab[i] for i in key[1]]
         else:
-            raise ValueError("This indexing is not possible.")
+            raise ValueError("Only slices or integer lists can be used in indexing.")
 
         # we select objects: in the data and targets
         newd.data = newd.data[key[0],:]
@@ -206,7 +206,7 @@ class prdataset(object):
         elif (axis==1):
             out = out.setdata(numpy.concatenate((out.data,other.data),axis=1))
         else:
-            raise ValueError("Concatenation along this axis is not possible.")
+            raise ValueError("Concatenation is only possible along axis 0 or 1.")
         return out
 
     def settargets(self,labelname,targets):
