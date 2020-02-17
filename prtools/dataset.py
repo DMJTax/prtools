@@ -161,27 +161,28 @@ class prdataset(object):
 
     def __getitem__(self,key):
         newd = copy.deepcopy(self)
-        # deep magic with indices:
-        k1 = key[0]
-        k2 = key[1]
-        if isinstance(k1,int):  # fucking python!
-            k1 = range(k1,k1+1)
-        if isinstance(k2,int):  # fucking python!!!!
-            k2 = range(k2,k2+1)
-        newkey = (k1,k2)
-        # select columns of feature targets
-        newfeatlab = newd.featlab[key[1]]
-        #if not isinstance(newfeatlab,numpy.ndarray): #DXD why??
-        #    newfeatlab = numpy.array([newfeatlab]) # GRR Python
-        newd.featlab = newfeatlab
-        # select rows/columns from dataset:
-        newd = newd.setdata(newd.data[newkey])
-        # select rows from targets
-        newd.targets = newd.targets[newkey[0]]
+        # when we select columns (features), we have to take care of the
+        # feature labels, because that is a *list*:
+        if isinstance(key[1],slice):
+            # we select columns: in the data and the feature labels
+            newd.data = newd.data[:,key[1]]
+            newd.featlab = newd.featlab[key[1]]
+        elif isinstance(key[1],list):
+            if (max(key[1])>=newd.data.shape[1]):
+                raise ValueError("Feature indices should be smaller than %d."%newd.data.shape[1])
+            newd.data = newd.data[:,key[1]] # ndarrays can handle it
+            newd.featlab = [newd.featlab[i] for i in key[1]]
+        else:
+            raise ValueError("This indexing is not possible.")
+
+        # we select objects: in the data and targets
+        newd.data = newd.data[key[0],:]
+        newd.targets = newd.targets[key[0]]
         # select rows from targets
         if (len(newd._targets_)>0):
-            newd._targets_ = newd._targets_[newkey[0],:]
+            newd._targets_ = newd._targets_[key[0],:]
         return newd
+
     def __setitem__(self,key,item):
         self.data[key] = item
 
