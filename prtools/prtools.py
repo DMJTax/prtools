@@ -641,8 +641,12 @@ def knnm(task=None,x=None,w=None):
         # just return the name, and hyperparameters
         if x is None:
             x = [1]
-        if (type(x) is float) or (type(x) is int):
+        if (isinstance(x,list) and (len(x)==0)):
+            x = [1]
+        if (isinstance(x,float) or (type(x) is int)):
             x = [x]
+        if (x[0]<1):
+            raise ValueError('kNN: Please use a positive value for K!')
         return 'k-Nearest neighbor', x
     elif (task=="train"):
         # we only need to store the data
