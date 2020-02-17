@@ -204,7 +204,6 @@ class prdataset(object):
             out.targets = numpy.concatenate((out.targets,other.targets),axis=0)
             out._targets_ = numpy.concatenate((out._targets_,other._targets_),axis=0)
         elif (axis==1):
-            print(other.data)
             out = out.setdata(numpy.concatenate((out.data,other.data),axis=1))
         else:
             raise ValueError("Concatenation along this axis is not possible.")
