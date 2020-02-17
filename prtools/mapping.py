@@ -15,9 +15,10 @@ from .dataset import prdataset
 class prmapping(object):
     "Prmapping in Python"
 
-    def __init__(self,mapping_func,x=[],hyperp=[]):
+    def __init__(self,mapping_func,x=[],hyperp=None):
         # exception: when only hyperp are given
-        if (not isinstance(x,prdataset)) and (not hyperp): 
+        #if (not isinstance(x,prdataset)) and (not hyperp): 
+        if (not isinstance(x,prdataset)) and (hyperp is None): 
             hyperp = x
             x = []
         self.mapping_func = mapping_func
