@@ -2,6 +2,19 @@
 Pattern Recognition Dataset class
 
 Should provide a simple and consistent way to deal with datasets.
+A dataset contains:
+    data     a data matrix of NxD,  where N is the number of objects,
+             and D is the number of features
+    targets  the output values that should be predicted from the objects
+Additionally, a dataset name, or feature labels can be provided.
+
+The main goal is to keep the labels consistent with the data, when you
+try to slice your dataset, or when you want to split your data in a
+training and test set:
+    a = gendatb([50,50])     generate a Banana prdataset
+    [x,z] = gendat(a,0.8)    split in train and test set
+    b = a[:,:1]              only select the first feature
+    c = a[30:50,:]           only select a few samples
 """
 
 import numpy
@@ -181,6 +194,8 @@ class prdataset(object):
         # select rows from targets
         if (len(newd._targets_)>0):
             newd._targets_ = newd._targets_[key[0],:]
+        # make the shape consistent:
+        newd.shape = newd.data.shape
         return newd
 
     def __setitem__(self,key,item):
