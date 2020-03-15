@@ -187,7 +187,6 @@ class prdataset(object):
             newd.featlab = [newd.featlab[i] for i in key[1]]
         else:
             raise ValueError("Only slices or integer lists can be used in indexing.")
-
         # we select objects: in the data and targets
         newd.data = newd.data[key[0],:]
         newd.targets = newd.targets[key[0]]
@@ -200,11 +199,6 @@ class prdataset(object):
 
     def __setitem__(self,key,item):
         self.data[key] = item
-
-    def seldat(self,cl):
-        newd = copy.deepcopy(self)
-        I = (self.nlab()==cl).nonzero()
-        return newd[I[0],:]   # grr, this python..
 
     def getprior(self):
         if (len(self.prior)>0):
@@ -358,6 +352,12 @@ def fusion_graph(X, link):
     plt.show()
 
 # === datasets ===============================
+
+def seldat(x,cl):
+    newd = copy.deepcopy(x)
+    I = (x.nlab()==cl).nonzero()
+    return newd[I[0],:]   # grr, this python..
+
 def genclass(n,p):
     "Generate class frequency distribution"
     if isinstance(n,int):
@@ -404,7 +404,7 @@ def gendat(x,n,seed=None):
     numpy.random.seed(seed)
     # now generate the data:
     i=0  # first class is special:
-    x1 = x.seldat(i)
+    x1 = seldat(x,i)
     if (n[i]==clsz[i]):
         # take a bootstrap sample:
         I = numpy.random.randint(0,n[i],n[i])
@@ -419,7 +419,7 @@ def gendat(x,n,seed=None):
     leftout = x1[J,:]
     # now the other classes:
     for i in range(1,nrcl):
-        xi = x.seldat(i)
+        xi = seldat(x,i)
         if (n[i]==clsz[i]):
             # take a bootstrap sample:
             I = numpy.random.randint(0,n[i],n[i])
