@@ -464,7 +464,7 @@ def gaussm(task=None,x=None,w=None):
         Z = numpy.zeros((c,1))
         # estimate the means and covariance matrices:
         for i in range(c):
-            xi = x.seldat(i)
+            xi = seldat(x,i)
             mn[i,:] = numpy.mean(+xi,axis=0)
             cv[i,:,:] = numpy.cov(+xi,rowvar=False)
         # depending of the type, we have to treat the cov's:
@@ -598,7 +598,7 @@ def fisherc(task=None,x=None,w=None):
         cv = numpy.zeros((dim,dim))
         v0 = 0.
         for i in range(c):
-            xi = x.seldat(i)
+            xi = seldat(x,i)
             mn[i,:] = numpy.mean(+xi,axis=0)
             thiscov = numpy.cov(+xi,rowvar=False)
             #DXD: is this a good idea?
@@ -717,7 +717,7 @@ def parzenm(task=None,x=None,w=None):
         Z = numpy.sqrt(2*numpy.pi)*h**dim
         out = numpy.zeros((n,nrcl))
         for i in range(nrcl):
-            xi = W.seldat(i)
+            xi = seldat(W,i)
             D = sqeucldist(+x,+xi)
             out[:,i] = numpy.sum( numpy.exp(-D/(2*h*h)), axis=1)/Z
         return out
@@ -955,7 +955,7 @@ def mogm(task=None,x=None,w=None):
         c = x.nrclasses()
         g = []
         for i in range(c):
-            xi = x.seldat(i)
+            xi = seldat(x,i)
             g.append(mog(xi,w))
 
         # return the parameters, and feature labels
