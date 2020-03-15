@@ -135,12 +135,14 @@ def proxm(task=None,x=None,w=None):
             R = +x
         else:
             R = numpy.copy(x)
+        # the feature labels:
+        featlab = numpy.arange(R.shape[0])
         if (w[0]=='eucl'):
-            return ('eucl',R), numpy.arange(R.shape[0])
-        if (w[0]=='city'):
-            return ('city',R), numpy.arange(R.shape[0])
+            return ('eucl',R), featlab
+        elif (w[0]=='city'):
+            return ('city',R), featlab
         elif (w[0]=='rbf'):
-            return ('rbf',R,w[1]), numpy.arange(R.shape[0])
+            return ('rbf',R,w[1]), featlab
         else:
             raise ValueError('Proxm type not defined')
     elif (task=="eval"):
@@ -560,7 +562,7 @@ def nmc(task=None,x=None,w=None):
         c = x.nrclasses()
         mn = numpy.zeros((c,x.shape[1]))
         for i in range(c):
-            xi = x.seldat(i)
+            xi = seldat(x,i)
             mn[i,:] = numpy.mean(+xi,axis=0)
         # store the parameters, and labels:
         return mn,x.lablist()
