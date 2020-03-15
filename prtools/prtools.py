@@ -84,7 +84,7 @@ def scalem(task=None,x=None,w=None):
     """
     if not isinstance(task,str):
         return prmapping(scalem,task,x)
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         return 'Scalem', ()
     elif (task=="train"):
@@ -126,7 +126,7 @@ def proxm(task=None,x=None,w=None):
     if not isinstance(task,str):
         # A direct call to proxm, refer back to prmapping:
         return prmapping(proxm,task,x)
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparams
         return 'Proxm',x
     elif (task=="train"):
@@ -202,7 +202,7 @@ def softmax(task=None,x=None,w=None):
         if task is not None:
             out = out(task)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         return 'Softmax', ()
     elif (task=="train"):
@@ -235,7 +235,7 @@ def classc(task=None,x=None,w=None):
         if task is not None:
             out = out(task)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         return 'Classc', ()
     elif (task=="train"):
@@ -273,7 +273,7 @@ def labeld(task=None,x=None,w=None):
         if task is not None:
             out = out(task)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         return 'Labeld', ()
     elif (task=="train"):
@@ -313,7 +313,7 @@ def testc(task=None,x=None,w=None):
         if task is not None:
             out = out(task)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         return 'Test classifier', ()
     elif (task=="train"):
@@ -348,7 +348,7 @@ def mclassc(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(mclassc,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if isinstance(x,prmapping):
             name = 'Multiclass '+x.name
@@ -402,7 +402,7 @@ def bayesrule(task=None,x=None,w=None):
         out = prmapping(bayesrule)
         out.mapping_type = "trained"
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         return 'Bayes rule', ()
     elif (task=="train"):
@@ -448,7 +448,7 @@ def gaussm(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(gaussm,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x = ('full',[0.])
@@ -554,7 +554,7 @@ def nmc(task=None,x=None,w=None):
     """
     if not isinstance(task,str):
         return prmapping(nmc,task,x)
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         return 'Nearest mean', ()
     elif (task=="train"):
@@ -585,7 +585,7 @@ def fisherc(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(fisherc,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         return 'Fisher', ()
     elif (task=="train"):
@@ -639,7 +639,7 @@ def knnm(task=None,x=None,w=None):
     """
     if not isinstance(task,str):
         return prmapping(knnm,task,x)
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x = [1]
@@ -689,14 +689,18 @@ def parzenm(task=None,x=None,w=None):
     Parzen density estimate per class
     
           W = parzenm(A,H)
+
+    On each of the classes in dataset A, a Parzen density is estimated,
+    using a width parameter of H.
+    Default H=1.
     """
     if not isinstance(task,str):
         out = prmapping(parzenm,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
-            x = [1]
+            x = [1.]
         if (type(x) is float) or (type(x) is int):
             x = [x]
         return 'Parzen density', x
@@ -722,13 +726,33 @@ def parzenm(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for parzenm.')
 
 def parzenc(task=None,x=None,w=None):
+    """
+    Parzen Classifier
+
+          W = parzenc(A,H)
+
+    Computation of the Parzen classifier for the dataset A, using width
+    parameter H. 
+    Default: H=1.
+    """
     return parzenm(task,x,w)*bayesrule()
 
 def naivebm(task=None,x=None,w=None):
-    "Naive Bayes density estimate"
+    """
+    Naive Bayes density estimate per class
+    
+          W = naivebm(A,DENS_M)
+
+    On each of the classes in dataset A, a Naive Bayes density is
+    estimated. That means that on each of the features the density
+    DENS_M is estimated independently. DENS_M should be an untrained
+    density mapping.
+
+    Default DENS_M=gaussm()
+    """
     if not isinstance(task,str):
         return prmapping(naivebm,task,x)
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x = [gaussm()]
@@ -759,6 +783,17 @@ def naivebm(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for naivebm.')
 
 def naivebc(task=None,x=None,w=None):
+    """
+    Naive Bayes classifier
+    
+          W = naivebc(A,DENS_M)
+
+    A Naive Bayes classifier is trained on dataset A.  That means that
+    on each of the features the density DENS_M is estimated
+    independently. DENS_M should be an untrained density mapping.
+
+    Default DENS_M=gaussm()
+    """
     return naivebm(task,x,w)*bayesrule()
 
 def mog(task=None,x=None,w=None):
@@ -787,7 +822,7 @@ def mog(task=None,x=None,w=None):
     """
     if not isinstance(task,str):
         return prmapping(mog,task,x)
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x = (3,'full',0.01)  # default: k=3, full cov., small reg.
@@ -909,7 +944,7 @@ def mogm(task=None,x=None,w=None):
     """
     if not isinstance(task,str):
         return prmapping(mogm,task,x)
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x = (2,'full',0.01)  # default: k=3, full cov., small reg.
@@ -968,7 +1003,7 @@ def baggingc(task=None,x=None,w=None):
     "Bagging"
     if not isinstance(task,str):
         return prmapping(baggingc,task,x)
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x = (nmc,100)
@@ -1008,7 +1043,7 @@ def stumpc(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(stumpc,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         return 'Decision stump', ()
     elif (task=="train"):
@@ -1091,7 +1126,7 @@ def adaboostc(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(adaboostc,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x = [100]
@@ -1169,7 +1204,7 @@ def svc(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(svc,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             kernel = 'rbf'
@@ -1223,7 +1258,7 @@ def loglc(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(loglc,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             C = numpy.inf
@@ -1255,7 +1290,7 @@ def dectreec(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(dectreec,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             max_d = None
@@ -1298,7 +1333,7 @@ def lassoc(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(lassoc,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             alpha = 0.
@@ -1330,7 +1365,7 @@ def pcam(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(pcam,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         return 'PCA', x
     elif (task=="train"):
@@ -1462,7 +1497,7 @@ def vandermondem(task=None,x=None,w=None):
         if isinstance(task,prdataset):
             out = out(task)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x = 1
@@ -1508,7 +1543,7 @@ def linearr(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(linearr,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x = 1
@@ -1550,7 +1585,7 @@ def ridger(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(ridger,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x = 0.
@@ -1590,7 +1625,7 @@ def kernelr(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(kernelr,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x = 1.
@@ -1633,7 +1668,7 @@ def lassor(task=None,x=None,w=None):
     if not isinstance(task,str):
         out = prmapping(lassor,task,x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x = 1.
@@ -1674,7 +1709,7 @@ def testr(task=None,x=None,w=None):
         if task is not None:
             out = out(task)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         return 'Test regressor', ()
     elif (task=="train"):
@@ -1715,9 +1750,9 @@ def hclust(task=None, x=None, w=None):
         if task is not None:
             out = out(task)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
-        print('untrained :::')
+        print('init :::')
         if x is None:
             k = 2
             link = 'single'
@@ -1961,7 +1996,7 @@ def kmeans(task=None, x=None, w=None):
         if task is not None:
             out = out(task)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             k = 8
@@ -2025,7 +2060,7 @@ def pcam(task=None, x=None, w=None):
     if not isinstance(task, str):
         out = prmapping(pcam, task, x)
         return out
-    if task == 'untrained':
+    if task == 'init':
         # just return the name, and hyperparameters
         if x is None:
             n = 1
@@ -2070,7 +2105,7 @@ def icam(task=None, x=None, w=None):
     if not isinstance(task, str):
         out = prmapping(icam, task, x)
         return out
-    if task == 'untrained':
+    if task == 'init':
         # just return the name, and hyperparameters
         if x is None:
             n = 1
@@ -2115,7 +2150,7 @@ def fisherm(task=None, x=None, w=None):
     if not isinstance(task, str):
         out = prmapping(fisherm, task, x)
         return out
-    if task == 'untrained':
+    if task == 'init':
         # just return the name, and hyperparameters
         if x is None:
             n = 1
@@ -2163,7 +2198,7 @@ def llem(task=None, x=None, w=None):
     if not isinstance(task, str):
         out = prmapping(llem, task, x)
         return out
-    if task == 'untrained':
+    if task == 'init':
         # just return the name, and hyperparameters
         if x is None:
             n = 1
@@ -2212,7 +2247,7 @@ def isomapm(task=None, x=None, w=None):
     if not isinstance(task, str):
         out = prmapping(isomapm, task, x)
         return out
-    if task == 'untrained':
+    if task == 'init':
         # just return the name, and hyperparameters
         if x is None:
             n = 1
@@ -2302,7 +2337,7 @@ def featsel(task=None, x=None, w=None):
     if not isinstance(task,str):
         out = prmapping(featsel, task, x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             clf = '1NN'
@@ -2360,7 +2395,7 @@ def featseli(task=None, x=None, w=None):
     if not isinstance(task,str):
         out = prmapping(featseli, task, x)
         return out
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x[0] = '1NN'
