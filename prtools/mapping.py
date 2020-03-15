@@ -22,29 +22,30 @@ Pythonic way:
 
 You can define your own prmapping by defining one function that is able
 to perform three tasks: initialisation, training and evaluation. This is
-indicated by the first input parameter 'task'.
+indicated by the first input parameter 'task'. A basic mapping looks
+like:
 
-    def scalem(task=None,x=None,w=None):
-    if not isinstance(task,str):
-        # do what you like, preferrably return a prmapping:
-        return prmapping(scalem,task,x)
-    if (task=='untrained'):
-        # just return the name of the mapping, and hyperparameters:
-        return 'Scalem', ()
-    elif (task=="train"):
-        # we are going to train the mapping. The hyperparameters are
-        # available in input parameter w
-        mn = numpy.mean(+x,axis=0)
-        sc = numpy.std(+x,axis=0)
-        # return the trained parameters, and feature labels:
-        return (mn,sc), x.featlab
-    elif (task=="eval"):
-        # apply the mapping to new data. The full mapping is available
-        # in w.
-        W = w.data   # get the parameters out
-        x = +x-W[0]
-        x = +x/W[1]
-        return x
+def scalem(task=None,x=None,w=None):
+if not isinstance(task,str):
+    # return a prmapping:
+    return prmapping(scalem,task,x)
+if (task=='init'):
+    # just return the name of the mapping, and hyperparameters:
+    return 'Scalem', ()
+elif (task=="train"):
+    # we are going to train the mapping. The hyperparameters are
+    # available in input parameter w
+    mn = numpy.mean(+x,axis=0)
+    sc = numpy.std(+x,axis=0)
+    # return the trained parameters, and feature labels:
+    return (mn,sc), x.featlab
+elif (task=="eval"):
+    # apply the mapping to new data. The full mapping is available
+    # in w.
+    W = w.data   # get the parameters out of the mapping
+    x = +x-W[0]
+    x = +x/W[1]
+    return x
 
 
 """
@@ -68,7 +69,7 @@ class prmapping(object):
             x = []
         self.mapping_func = mapping_func
         self.mapping_type = "untrained"
-        self.name, self.hyperparam = self.mapping_func("untrained",hyperp)
+        self.name, self.hyperparam = self.mapping_func("init",hyperp)
         self.data = () 
         self.targets = ()
         self.shape = [0,0]
@@ -105,7 +106,7 @@ class prmapping(object):
         self.mapping_func = mappingfunc
         self.mapping_type = "untrained"
         self.hyperparam = kwargs
-        self.name,self.hyperparam = self.mapping_func('untrained',kwargs)
+        self.name,self.hyperparam = self.mapping_func('init',kwargs)
         return self
 
     def train(self,x,args=None):
@@ -255,7 +256,7 @@ def sequentialm(task=None,x=None,w=None):
                 w = prmapping(sequentialm,newm,newx)
             w.name = newm[0].name+'+'+newm[1].name
             return w
-    if (task=='untrained'):
+    if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             mapname = 'Sequential'
