@@ -2,6 +2,51 @@
 Pattern Recognition Mapping class
 
 Should provide a uniform and consistent way of defining transformation for datasets.
+
+You can train a mapping directly on a dataset:
+    w = scalem(a)
+To apply it to a new dataset:
+    b = a*w
+You can also start with an untrained mapping, and then train it:
+    u = scalem()
+    w = a*u
+You can also concatenate mappings into long processing pipelines:
+    u = scalem()*pcam()*scalem()*nmc()
+    w = a*u
+
+When you dislike this 'Matlab-style' call, you can also do it in the
+Pythonic way:
+    w = scalem()
+    w.train(a)
+    b = w.eval(a)
+
+You can define your own prmapping by defining one function that is able
+to perform three tasks: initialisation, training and evaluation. This is
+indicated by the first input parameter 'task'.
+
+    def scalem(task=None,x=None,w=None):
+    if not isinstance(task,str):
+        # do what you like, preferrably return a prmapping:
+        return prmapping(scalem,task,x)
+    if (task=='untrained'):
+        # just return the name of the mapping, and hyperparameters:
+        return 'Scalem', ()
+    elif (task=="train"):
+        # we are going to train the mapping. The hyperparameters are
+        # available in input parameter w
+        mn = numpy.mean(+x,axis=0)
+        sc = numpy.std(+x,axis=0)
+        # return the trained parameters, and feature labels:
+        return (mn,sc), x.featlab
+    elif (task=="eval"):
+        # apply the mapping to new data. The full mapping is available
+        # in w.
+        W = w.data   # get the parameters out
+        x = +x-W[0]
+        x = +x/W[1]
+        return x
+
+
 """
 
 import numpy
