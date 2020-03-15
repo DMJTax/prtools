@@ -2152,8 +2152,8 @@ def fisherm(task=None, x=None, w=None):
 
         W = fisherm(A, N)
 
-        Performs linear discriminant analysis (LDA) on dataset A, keeping N < C (by default min(C, K) - 1) dimensions,
-        where C is the number of classes and K the number of features in A.
+        Performs linear discriminant analysis (LDA) on dataset A,
+        keeping N < C dimensions, where C is the number of classes.
 
         Example:
         a = read_mat("cigars")
@@ -2166,28 +2166,31 @@ def fisherm(task=None, x=None, w=None):
     if task == 'init':
         # just return the name, and hyperparameters
         if x is None:
-            n = 1
-        else:
-            n = x
-        fisher = LinearDiscriminantAnalysis(n_components=n)
-        return 'Linear Discriminant Analysis', fisher
+            x = 1
+        return 'Fisher mapping', (x)
 
     elif task == "train":
-        # we are going to train the mapping
-        X = +x
-        lab = x.targets
-        fisher = copy.deepcopy(w)
+        nrd = w
+        c = x.nrclasses()
+        dim = x.shape[1]
+        # get within and between cov.matrices:
+        mn = numpy.zeros((c,dim))
+        cv = numpy.zeros((dim,dim))
+        for i in range(c):
+            xi = +pr.seldat(x,i)
+            mn[i,:] = numpy.mean(xi,axis=0)
+            cv += numpy.cov(xi,rowvar=False)
+        # get largest eigenvectors of S_W^-1 S_B:
+        C = numpy.linalg.inv(cv)
+        C = C.dot(numpy.cov(mn,rowvar=False))
+        D,E = numpy.linalg.eig(C)
 
-        fisher.fit(X, lab.ravel())
-        return fisher, range(len(fisher.coef_))
-
-    elif task == "eval":
+        # store the parameters, and labels:
+        return E[:,:nrd], numpy.arange(nrd)
+    elif (task=="eval"):
         # we are applying to new data
-        fisher = w.data
-        pred = fisher.transform(+x)
-        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
-            pred = pred[:, numpy.newaxis]
-        return pred
+        X = +x
+        return X.dot(w.data)
     else:
         print(task)
         raise ValueError('This task is *not* defined for fisherm.')
