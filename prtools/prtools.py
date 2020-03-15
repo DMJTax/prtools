@@ -1361,7 +1361,18 @@ def lassoc(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for lassoc.')
 
 def pcam(task=None,x=None,w=None):
-    "Principal Component Analysis "
+    """
+    Principal Component Analysis 
+
+           w = pcam(A,K)
+
+    Extract the K principal components from dataset A.
+
+    Example:
+    a = gendatb()
+    w = pcam(a,1)
+    b = a*w
+    """
     if not isinstance(task,str):
         out = prmapping(pcam,task,x)
         return out
@@ -1397,6 +1408,18 @@ def pcam(task=None,x=None,w=None):
         raise ValueError('This task is *not* defined for pcam.')
 
 def sqeucldist(a,b):
+    """
+    Squared Euclidean Distances
+
+           D = sqeucldist(A,B)
+
+    Compute the (squared) Euclidean distances between the objects in
+    dataset A and B.
+
+    Example:
+    a = gendatb()
+    d = sqeucldist(a,a)
+    """
     n0,dim = a.shape
     n1,dim1 = b.shape
     if (dim!=dim1):
@@ -1409,6 +1432,21 @@ def sqeucldist(a,b):
     return D
 
 def prcrossval(a,u,k=10,nrrep=1,testfunc=testc):
+    """
+    Performance estimation using crossvalidation
+
+           e = prcrossval(A,U,K,NRREP)
+
+    Estimate the performance of (untrained) mapping U on dataset A by
+    using K-fold (stratified) crossvalidation. If required, the
+    crossvalidation can be repeated NRREP times, to get a better
+    estimate.
+
+    Example:
+    a = gendatb()
+    u = nmc()
+    e = prcrossval(a,u,k=10)
+    """
     n = a.shape[0]
     c = a.nrclasses()
     if (nrrep==1):
