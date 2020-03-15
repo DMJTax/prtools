@@ -1435,11 +1435,11 @@ def prcrossval(a,u,k=10,nrrep=1,testfunc=testc):
     """
     Performance estimation using crossvalidation
 
-           e = prcrossval(A,U,K,NRREP)
+           E = prcrossval(A,U,K,NRREP)
 
-    Estimate the performance of (untrained) mapping U on dataset A by
-    using K-fold (stratified) crossvalidation. If required, the
-    crossvalidation can be repeated NRREP times, to get a better
+    Estimate the classification error E of (untrained) mapping U on
+    dataset A by using K-fold (stratified) crossvalidation. If required,
+    the crossvalidation can be repeated NRREP times, to get a better
     estimate.
 
     Example:
@@ -1479,6 +1479,22 @@ def prcrossval(a,u,k=10,nrrep=1,testfunc=testc):
     return e
 
 def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=3,testfunc=testc):
+    """
+    Learning curve
+
+           E = cleval(A,U,TRAINSIZE,NRREPS)
+
+    Estimate the classification error E of (untrained) mapping U on
+    dataset A for varying training set sizes. Default is
+    trainsize=[2,3,5,10,20,30].
+    To get reliable estimates, the train-test split is repeated NRREPS=3
+    times.
+
+    Example:
+    a = gendatb([100,100])
+    u = nmc()
+    e = cleval(a,u,nrreps=10)
+    """
     nrcl = a.nrclasses()
     clsz = a.classsizes()
     if (numpy.max(trainsize)>=numpy.min(clsz)):
@@ -1506,6 +1522,23 @@ def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=3,testfunc=testc):
     return err, err_app
 
 def clevalf(a,u,trainsize=0.6,nrreps=5,testfunc=testc):
+    """
+    Feature curve
+
+           E = clevalf(A,U,TRAINSIZE,NRREPS)
+
+    Estimate the classification error E of (untrained) mapping U on
+    dataset A for varying feature set sizes. The nr of features is from
+    1 to the nr of features in A. For K features, the classifier is
+    trained on A[:,:K]
+    To get reliable estimates, the train-test split is repeated NRREPS=5
+    times.
+
+    Example:
+    a = gendatb([100,100])
+    u = nmc()
+    e = clevalf(a,u,nrreps=10)
+    """
     dim = a.shape[1]
     err = numpy.zeros((dim,nrreps))
     err_app = numpy.zeros((dim,nrreps))
