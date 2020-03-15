@@ -1920,6 +1920,19 @@ def gendath(n=(50,50)):
     return out
 
 def gendats3(n,dim=2,delta=2.):
+    """
+    Generation of three spherical classes
+
+        A = gendats3(N,DIM,DELTA)
+
+    Generation of a DIM-dimensional 3-class dataset A of N objects.  All
+    classes are spherically Gaussian distributed.
+
+    Class 0 has the mean at (-DELTA, 0, 0, ..].
+    Class 1 has the mean at (+DELTA, 0, 0, ..].
+    Class 2 has the mean at (0, +DELTA, 0, ..].
+    P(1) = P(2) = P(3) = 1/3.
+    """
     N = genclass(n,[1./3,1./3,1./3])
     x0 = numpy.random.randn(N[0],dim)
     x1 = numpy.random.randn(N[1],dim)
