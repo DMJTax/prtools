@@ -32,14 +32,14 @@ if not isinstance(task,str):
 if (task=='init'):
     # just return the name of the mapping, and hyperparameters:
     return 'Scalem', ()
-elif (task=="train"):
+elif (task=='train'):
     # we are going to train the mapping. The hyperparameters are
     # available in input parameter w
     mn = numpy.mean(+x,axis=0)
     sc = numpy.std(+x,axis=0)
     # return the trained parameters, and feature labels:
     return (mn,sc), x.featlab
-elif (task=="eval"):
+elif (task=='eval'):
     # apply the mapping to new data. The full mapping is available
     # in w.
     W = w.data   # get the parameters out of the mapping
@@ -68,8 +68,8 @@ class prmapping(object):
             hyperp = x
             x = []
         self.mapping_func = mapping_func
-        self.mapping_type = "untrained"
-        self.name, self.hyperparam = self.mapping_func("init",hyperp)
+        self.mapping_type = 'untrained'
+        self.name, self.hyperparam = self.mapping_func('init',hyperp)
         self.data = () 
         self.targets = ()
         self.shape = [0,0]
@@ -83,9 +83,9 @@ class prmapping(object):
         outstr = ""
         if (len(self.name)>0):
             outstr = "%s, " % self.name
-        if (self.mapping_type=="untrained"):
+        if (self.mapping_type=='untrained'):
             outstr += "untrained mapping"
-        elif (self.mapping_type=="trained"):
+        elif (self.mapping_type=='trained'):
             outstr += "%d to %d trained mapping" % (self.shape[0],self.shape[1])
         else:
             raise ValueError('Mapping type is not defined.')
@@ -104,14 +104,14 @@ class prmapping(object):
 
     def init(self,mappingfunc,**kwargs):
         self.mapping_func = mappingfunc
-        self.mapping_type = "untrained"
+        self.mapping_type = 'untrained'
         self.hyperparam = kwargs
         self.name,self.hyperparam = self.mapping_func('init',kwargs)
         return self
 
     def train(self,x,args=None):
         # train
-        if (self.mapping_type=="trained"):
+        if (self.mapping_type=='trained'):
             raise ValueError('The mapping is already trained and will be retrained.')
         # maybe the supplied parameters overrule the stored ones:
         if args is not None:
@@ -127,13 +127,13 @@ class prmapping(object):
             self.shape[0] = x.shape[1]
             # and the output size?
             xx = +x[:1,:]   # hmmm??
-            out = self.mapping_func("eval",xx,self)
+            out = self.mapping_func('eval',xx,self)
             self.shape[1] = out.shape[1]
         return self
 
     def eval(self,x):
         # evaluate
-        if (self.mapping_type=="untrained"):
+        if (self.mapping_type=='untrained'):
             raise ValueError('The mapping is not trained and cannot be evaluated.')
         # not a good idea to supply the true targets?
         # but it is needed for testc!
@@ -143,7 +143,7 @@ class prmapping(object):
         #    out = self.mapping_func("eval",x_nolab,self)
         #else:
         newx = copy.deepcopy(x)
-        out = self.mapping_func("eval",newx,self)
+        out = self.mapping_func('eval',newx,self)
         if ((len(self.targets)>0) and (out.shape[1] != len(self.targets))):
             print(out.shape)
             print(self.targets)
@@ -160,11 +160,11 @@ class prmapping(object):
         return newx
 
     def __call__(self,x):
-        if (self.mapping_type=="untrained"):
+        if (self.mapping_type=='untrained'):
             # train
             out = self.train(x)
             return out
-        elif (self.mapping_type=="trained"):
+        elif (self.mapping_type=='trained'):
             # evaluate
             out = self.eval(x)
             return out
@@ -263,7 +263,7 @@ def sequentialm(task=None,x=None,w=None):
         else:
             mapname = x[0].name+'+'+x[1].name
         return mapname, x
-    elif (task=="train"):
+    elif (task=='train'):
         # we are going to train the mapping
         u = copy.deepcopy(w)  # I hate Python..
         x1 = copy.deepcopy(x) # Did I say that I hate Python??
@@ -282,7 +282,7 @@ def sequentialm(task=None,x=None,w=None):
         else:
             targets = u[1].targets
         return u, targets
-    elif (task=="eval"):
+    elif (task=='eval'):
         # we are applying to new data
         W = w.data   # get the parameters out
         return W[1](W[0](x))
