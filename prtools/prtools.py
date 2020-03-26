@@ -174,7 +174,7 @@ def proxm(task=None,x=None,w=None):
             raise ValueError("Proxm type '%s' not defined"%W[0])
         return D
     else:
-        raise ValueError('This task is *not* defined for proxm.')
+        raise ValueError("Task '%s' is *not* defined for proxm."%task)
 
 
 def softmax(task=None,x=None,w=None):
@@ -212,8 +212,7 @@ def softmax(task=None,x=None,w=None):
         sumx = numpy.sum(dat,axis=1,keepdims=True)
         return dat/sumx
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for softmax.')
+        raise ValueError("Task '%s' is *not* defined for softmax."%task)
 
 def classc(task=None,x=None,w=None):
     """
@@ -247,8 +246,7 @@ def classc(task=None,x=None,w=None):
         x.setdata( +x/sumx )
         return x
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for classc.')
+        raise ValueError("Task '%s' is *not* defined for classc."%task)
 
 
 def labeld(task=None,x=None,w=None):
@@ -289,8 +287,7 @@ def labeld(task=None,x=None,w=None):
         out = out[:,numpy.newaxis]
         return out
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for labeld.')
+        raise ValueError("Task '%s' is *not* defined for labeld."%task)
 
 def testc(task=None,x=None,w=None):
     """
@@ -325,8 +322,7 @@ def testc(task=None,x=None,w=None):
             err *= w
         return numpy.mean(err)
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for testc.')
+        raise ValueError("Task '%s' is *not* defined for testc."%task)
 
 
 def mclassc(task=None,x=None,w=None):
@@ -379,8 +375,7 @@ def mclassc(task=None,x=None,w=None):
             pred[:,i:(i+1)] = out[:,I[0]]
         return pred
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for mclassc.')
+        raise ValueError("Task '%s' is *not* defined for mclassc."%task)
 
 def bayesrule(task=None,x=None,w=None):
     """
@@ -419,8 +414,7 @@ def bayesrule(task=None,x=None,w=None):
         x = x.setdata(out)
         return x
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for bayesrule.')
+        raise ValueError("Task '%s' is *not* defined for bayesrule."%task)
 
 def gaussm(task=None,x=None,w=None):
     """
@@ -503,8 +497,7 @@ def gaussm(task=None,x=None,w=None):
             out[:,i] = W[0][i] * numpy.exp(-out[:,i]/2)/W[3][i]
         return out
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for gaussm.')
+        raise ValueError("Task '%s' is *not* defined for gaussm."%task)
 
 def ldc(task=None,x=None,w=None):
     """
@@ -621,8 +614,7 @@ def fisherc(task=None,x=None,w=None):
             gr = gr[numpy.newaxis,:]
         return gr
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for fisherc.')
+        raise ValueError("Task '%s' is *not* defined for fisherc."%task)
 
 def knnm(task=None,x=None,w=None):
     """
@@ -667,8 +659,7 @@ def knnm(task=None,x=None,w=None):
             out[i,:] = numpy.bincount(thislab[0],minlength=nrcl)/k
         return out
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for knnc.')
+        raise ValueError("Task '%s' is *not* defined for knnm."%task)
 
 def knnc(task=None,x=None,w=None):
     """
@@ -719,8 +710,7 @@ def parzenm(task=None,x=None,w=None):
             out[:,i] = numpy.sum( numpy.exp(-D/(2*h*h)), axis=1)/Z
         return out
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for parzenm.')
+        raise ValueError("Task '%s' is *not* defined for parzenm."%task)
 
 def parzenc(task=None,x=None,w=None):
     """
@@ -776,8 +766,7 @@ def naivebm(task=None,x=None,w=None):
             out *= +(x[:,i:(i+1)]*W[i])
         return out
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for naivebm.')
+        raise ValueError("Task '%s' is *not* defined for naivebm."%task)
 
 def naivebc(task=None,x=None,w=None):
     """
@@ -913,8 +902,7 @@ def mog(task=None,x=None,w=None):
             out[:,i] = W[0][i]*numpy.exp(-out[:,i]/2.)/W[3][i]
         return out
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for mog.')
+        raise ValueError("Task '%s' is *not* defined for mog."%task)
 
 def mogm(task=None,x=None,w=None):
     """
@@ -969,8 +957,7 @@ def mogm(task=None,x=None,w=None):
             out[:,i] = numpy.sum(+(x*W[i]),axis=1)
         return out
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for mogm.')
+        raise ValueError("Task '%s' is *not* defined for mogm."%task)
 
 def mogc(task=None,x=None,w=None):
     """
@@ -1032,8 +1019,7 @@ def baggingc(task=None,x=None,w=None):
             out[J,I] += 1 
         return out
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for baggingc.')
+        raise ValueError("Task '%s' is *not* defined for baggingc."%task)
 
 def stumpc(task=None,x=None,w=None):
     "Decision stump classifier"
@@ -1115,8 +1101,7 @@ def stumpc(task=None,x=None,w=None):
             dat = dat[numpy.newaxis,:]  # GRRRR
         return dat
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for stumpc.')
+        raise ValueError("Task '%s' is *not* defined for stumpc."%task)
 
 def adaboostc(task=None,x=None,w=None):
     "AdaBoost classifier"
@@ -1176,8 +1161,7 @@ def adaboostc(task=None,x=None,w=None):
         out = numpy.hstack((pred,-pred))
         return out
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for adaboostc.')
+        raise ValueError("Task '%s' is *not* defined for adaboostc."%task)
 
 def svc(task=None,x=None,w=None):
     """
@@ -1236,8 +1220,7 @@ def svc(task=None,x=None,w=None):
             pred = numpy.hstack((-pred,pred)) # sigh
         return pred
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for svc.')
+        raise ValueError("Task '%s' is *not* defined for svc."%task)
 
 def loglc(task=None,x=None,w=None):
     """
@@ -1279,8 +1262,7 @@ def loglc(task=None,x=None,w=None):
             pred = numpy.hstack((-pred,pred)) # sigh
         return pred
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for loglc.')
+        raise ValueError("Task '%s' is *not* defined for loglc."%task)
 
 def dectreec(task=None,x=None,w=None):
     "Decision tree classifier"
@@ -1311,8 +1293,7 @@ def dectreec(task=None,x=None,w=None):
             pred = numpy.hstack((-pred,pred)) # sigh
         return pred
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for dectreec.')
+        raise ValueError("Task '%s' is *not* defined for dectreec."%task)
 
 def lassoc(task=None,x=None,w=None):
     """
@@ -1354,8 +1335,7 @@ def lassoc(task=None,x=None,w=None):
             pred = numpy.hstack((-pred,pred)) # sigh
         return pred
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for lassoc.')
+        raise ValueError("Task '%s' is *not* defined for lassoc."%task)
 
 def pcam(task=None,x=None,w=None):
     """
@@ -1401,8 +1381,7 @@ def pcam(task=None,x=None,w=None):
         dat = +x
         return dat.dot(w.data)
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for pcam.')
+        raise ValueError("Task '%s' is *not* defined for pcam."%task)
 
 def sqeucldist(a,b):
     """
@@ -1583,8 +1562,7 @@ def vandermondem(task=None,x=None,w=None):
             dat = numpy.hstack((dat,XX))
         return dat
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for vandermondem.')
+        raise ValueError("Task '%s' is *not* defined for vandermondem."%task)
 
 def linearr(task=None,x=None,w=None):
     """
@@ -1629,8 +1607,7 @@ def linearr(task=None,x=None,w=None):
         dat = +vandermondem(prdataset(x),w.hyperparam)
         return dat.dot(w.data)
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for linearr.')
+        raise ValueError("Task '%s' is *not* defined for linearr."%task)
 
 def ridger(task=None,x=None,w=None):
     """
@@ -1672,8 +1649,7 @@ def ridger(task=None,x=None,w=None):
         dat = numpy.hstack((+x,numpy.ones((n,1))))
         return dat.dot(w.data)
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for ridger.')
+        raise ValueError("Task '%s' is *not* defined for ridger."%task)
 
 def kernelr(task=None,x=None,w=None):
     """
@@ -1712,8 +1688,7 @@ def kernelr(task=None,x=None,w=None):
         out = out/numpy.sum(K,axis=1,keepdims=True)
         return out
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for kernelr.')
+        raise ValueError("Task '%s' is *not* defined for kernelr."%task)
 
 def lassor(task=None,x=None,w=None):
     """
@@ -1756,8 +1731,7 @@ def lassor(task=None,x=None,w=None):
         out = out[:,numpy.newaxis]  # Pfff... Python...
         return out
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for lassor.')
+        raise ValueError("Task '%s' is *not* defined for lassor."%task)
 
 def testr(task=None,x=None,w=None):
     """
@@ -1791,8 +1765,7 @@ def testr(task=None,x=None,w=None):
             err *= w
         return numpy.mean(err)
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for testr.')
+        raise ValueError("Task '%s' is *not* defined for testc."%task)
 
 def hclust(task=None, x=None, w=None):
     """
@@ -2124,50 +2097,6 @@ def dbi(a, lab):
         print('Davies-Bouldin Index:', e)
         return e
 
-def pcam(task=None, x=None, w=None):
-    """
-    Principal Component Analysis
-
-    W = pcam(A, N)
-
-    Performs principal component analysis (PCA) on dataset A, keeping N (by default 1) dimensions.
-
-    Example:
-    a = read_mat("cigars")
-    w = pcam(a, 1)
-    b = a*w
-    """
-
-    if not isinstance(task, str):
-        out = prmapping(pcam, task, x)
-        return out
-    if task == 'init':
-        # just return the name, and hyperparameters
-        if x is None:
-            n = 1
-        else:
-            n = x
-        pca = PCA(n_components=n)
-        return 'Principal Component Analysis', pca
-
-    elif task == 'train':
-        # we are going to train the mapping
-        X = +x
-        pca = copy.deepcopy(w)
-        pca.fit(X)
-        return pca, range(pca.n_components_)
-
-    elif task == 'eval':
-        # we are applying to new data
-        pca = w.data
-        pred = pca.transform(+x)
-        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
-            pred = pred[:, numpy.newaxis]
-        return pred
-    else:
-        print(task)
-        raise ValueError('This task is *not* defined for pcam.')
-
 
 def icam(task=None, x=None, w=None):
     """
@@ -2210,8 +2139,7 @@ def icam(task=None, x=None, w=None):
             pred = pred[:, numpy.newaxis]
         return pred
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for icam.')
+        raise ValueError("Task '%s' is *not* defined for icam."%task)
 
 
 def fisherm(task=None, x=None, w=None):
@@ -2260,8 +2188,7 @@ def fisherm(task=None, x=None, w=None):
         X = +x
         return X.dot(w.data)
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for fisherm.')
+        raise ValueError("Task '%s' is *not* defined for fisherm."%task)
 
 
 def llem(task=None, x=None, w=None):
@@ -2310,8 +2237,7 @@ def llem(task=None, x=None, w=None):
             pred = pred[:, numpy.newaxis]
         return pred
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for lle.')
+        raise ValueError("Task '%s' is *not* defined for lle."%task)
 
 
 def isomapm(task=None, x=None, w=None):
@@ -2357,8 +2283,7 @@ def isomapm(task=None, x=None, w=None):
             pred = pred[:, numpy.newaxis]
         return pred
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for isomap.')
+        raise ValueError("Task '%s' is *not* defined for isomap."%task)
 
 def featselb(task=None, x=None, w=None):
     """
@@ -2455,8 +2380,7 @@ def featsel(task=None, x=None, w=None):
             pred = pred[:,numpy.newaxis]
         return pred
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for feature selector.')
+        raise ValueError("Task '%s' is *not* defined for feature selection."%task)
 
 def featseli(task=None, x=None, w=None):
     """
@@ -2518,8 +2442,7 @@ def featseli(task=None, x=None, w=None):
             pred = pred[:,numpy.newaxis]
         return pred
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for feature selector.')
+        raise ValueError("Task '%s' is *not* defined for feature selection."%task)
 
 def feateval(a, x=None):
     """
