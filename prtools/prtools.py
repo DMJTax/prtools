@@ -72,34 +72,49 @@ def scalem(task=None,x=None,w=None):
     """
     Scale mapping
 
-        W = scalem(A)
-        W = A*scalem()
+        W = scalem(A,STYPE)
+        W = A*scalem(STYPE)
 
-    Scales the features of dataset A to zero mean, and unit standard
-    deviation.
+    Scales the features of dataset A. The scaling is done according to
+    STYPE:
+    'unitvar'  (default) mean is set to 0, variance is set to 1
+    '01'       minimum is set to 0, maximum is set to 1
 
     Example:
-    >> w = scalem(a)
+    >> w = scalem(a,'unitvar')
     >> b = a*w
     """
+    # special case:
+    if (task in set(['unitvar','01'])):
+            x = task
+            task = None
     if not isinstance(task,str): # direct call: return a mapping
         return prmapping(scalem,task,x)
     if (task=='init'):
-        # just return the name, and hyperparameters:
-        return 'Scalem', ()
-    elif (task=='train'): # x contains the hyperparameters
-        # we are going to train the mapping
-        mn = numpy.mean(+x,axis=0)
-        sc = numpy.std(+x,axis=0)
-        # should I complain about standard deviations of zero?
-        sc[sc==0.] = 1.
-        # return the parameters, and feature labels
-        return (mn,sc), x.featlab
+        if x is None:                # default scaling
+            x = {'scaling':'unitvar'}
+        if not isinstance(x,dict):  `# always cast to dict
+            x = {'scaling':x}
+        # return the name, and hyperparameters:
+        return 'Scalem', x
+    elif (task=='train'):
+        # we are going to train the mapping on data x
+        # The hyperparameters are available in input parameter w
+        stype = w['scaling']
+        if (stype=='unitvar'):
+            mn = numpy.mean(+x,axis=0)
+            sc = numpy.std(+x,axis=0)
+            return (mn,sc), x.featlab
+        elif (stype=='01'):
+            minx = numpy.min(+x,axis=0)
+            sc = numpy.max(+x,axis=0) - minx
+            return (minx,sc), x.featlab
+        else:
+            raise ValueError("Scaling '%s' is not defined."%stype)
     elif (task=='eval'):
         # we are applying to new data
-        W = w.data   # get the parameters out
-        x = +x-W[0]
-        x = +x/W[1]
+        x = +x - w.data[0]
+        x = +x / w.data[1]
         return x
     else:
         raise ValueError("Task '%s' is *not* defined for scalem."%task)
