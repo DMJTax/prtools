@@ -30,17 +30,18 @@ if not isinstance(task,str):
     # return a prmapping:
     return prmapping(scalem,task,x)
 if (task=='init'):
-    # just return the name of the mapping, and hyperparameters:
+    # x now contains the provided hyperparameters
+    # return the name of the mapping, and hyperparameters:
     return 'Scalem', ()
 elif (task=='train'):
-    # we are going to train the mapping. The hyperparameters are
-    # available in input parameter w
+    # we are going to train the mapping on data x.
+    # The hyperparameters are available in input parameter w
     mn = numpy.mean(+x,axis=0)
     sc = numpy.std(+x,axis=0)
     # return the trained parameters, and feature labels:
     return (mn,sc), x.featlab
 elif (task=='eval'):
-    # apply the mapping to new data. The full mapping is available
+    # apply the mapping to new data x. The full mapping is available
     # in w.
     W = w.data   # get the parameters out of the mapping
     x = +x-W[0]
