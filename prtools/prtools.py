@@ -82,12 +82,12 @@ def scalem(task=None,x=None,w=None):
     >> w = scalem(a)
     >> b = a*w
     """
-    if not isinstance(task,str):
+    if not isinstance(task,str): # direct call: return a mapping
         return prmapping(scalem,task,x)
     if (task=='init'):
-        # just return the name, and hyperparameters
+        # just return the name, and hyperparameters:
         return 'Scalem', ()
-    elif (task=='train'):
+    elif (task=='train'): # x contains the hyperparameters
         # we are going to train the mapping
         mn = numpy.mean(+x,axis=0)
         sc = numpy.std(+x,axis=0)
@@ -102,8 +102,7 @@ def scalem(task=None,x=None,w=None):
         x = +x/W[1]
         return x
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for scalem.')
+        raise ValueError("Task '%s' is *not* defined for scalem."%task)
 
 def proxm(task=None,x=None,w=None):
     """
@@ -144,7 +143,7 @@ def proxm(task=None,x=None,w=None):
         elif (w[0]=='rbf'):
             return ('rbf',R,w[1]), featlab
         else:
-            raise ValueError('Proxm type not defined')
+            raise ValueError("Proxm type '%s' not defined"%w[0])
     elif (task=='eval'):
         # we are applying to new data:
         W = w.data
@@ -172,10 +171,9 @@ def proxm(task=None,x=None,w=None):
                     d = numpy.dot(df.T,df)
                     D[i,j] = numpy.exp(-d/s)
         else:
-            raise ValueError('Proxm type not defined')
+            raise ValueError("Proxm type '%s' not defined"%W[0])
         return D
     else:
-        print(task)
         raise ValueError('This task is *not* defined for proxm.')
 
 
@@ -570,8 +568,7 @@ def nmc(task=None,x=None,w=None):
         # we are applying to new data
         return -sqeucldist(+x,w.data)
     else:
-        print(task)
-        raise ValueError('This task is *not* defined for nmc.')
+        raise ValueError("Task '%s' is *not* defined for nmc."%task)
 
 def fisherc(task=None,x=None,w=None):
     """
