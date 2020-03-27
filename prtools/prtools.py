@@ -93,7 +93,7 @@ def scalem(task=None,x=None,w=None):
     if (task=='init'):
         if x is None:                # default scaling
             x = {'scaling':'unitvar'}
-        if not isinstance(x,dict):  `# always cast to dict
+        if not isinstance(x,dict):   # always cast to dict
             x = {'scaling':x}
         # return the name, and hyperparameters:
         return 'Scalem', x
