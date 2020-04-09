@@ -137,6 +137,9 @@ def proxm(task=None,x=None,w=None):
     >> w = a*u   # will approximate a Parzen classifier
 
     """
+    if (task in set(['eucl','city','rbf'])):
+            x = task
+            task = None
     if not isinstance(task,str):
         # A direct call to proxm, refer back to prmapping:
         return prmapping(proxm,task,x)
