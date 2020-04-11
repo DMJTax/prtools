@@ -127,7 +127,8 @@ class prmapping(object):
         if (hasattr(x,'shape')):  # combiners do not eat datasets
             self.shape[0] = x.shape[1]
             # and the output size?
-            xx = +x[:1,:]   # hmmm??
+            #xx = +x[:1,:]   # hmmm??
+            xx = x[:1,:]   # or??
             out = self.mapping_func('eval',xx,self)
             self.shape[1] = out.shape[1]
         return self
