@@ -421,7 +421,8 @@ def bayesrule(task=None,x=None,w=None):
         return None,()
     elif (task=='eval'):
         # we are classifying new data
-        # make sure that when dataset in, we also do dataset out:
+        # make sure that when a dataset is given as input, we also do
+        # dataset out, and when a data matrix in, then also a matrix out:
         outputdataset = True
         if not isinstance(x,prdataset):
             outputdataset = False
