@@ -186,7 +186,7 @@ class prmapping(object):
             # return an 'untrained' mapping, while it *might* be possible to
             # get a trained one when the two input mappings are already
             # trained:
-            out = sequentialm((leftm,rightm))
+            out = sequentialm([leftm,rightm])
             return out
         else:
             raise ValueError('Prmapping times something not defined.')
@@ -220,7 +220,7 @@ def sequentialm(task=None,x=None,w=None):
     "Sequential mapping"
     if not isinstance(task,str):
         # we should have gotten a list of two prmappings
-        if not isinstance(task,tuple):
+        if not isinstance(task,list):
             raise ValueError('Sequential map expects a list of 2 prmappings.')
         if not isinstance(task[0],prmapping):
             raise ValueError('Sequential map expects a list of 2 prmappings.')
