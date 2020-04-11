@@ -292,6 +292,79 @@ def sequentialm(task=None,x=None,w=None):
         print(task)
         raise ValueError('This task is *not* defined for sequentialm.')
 
+def parallelm(task=None,x=None,w=None):
+    "Parallel mapping"
+    if not isinstance(task,str):
+        # we should have gotten a list of prmappings
+        if not isinstance(task,list):
+            raise ValueError('Parallel map expects a list of prmappings.')
+        alltrained = True
+        allshapeout = 0
+        alltargets = numpy.ndarray((0,))
+        for thismap in task:
+            if not isinstance(thismap,prmapping):
+                raise ValueError('Parallel map expects a list of prmappings.')
+            alltrained = alltrained and (thismap.mapping_type=='trained')
+            allshapeout += thismap.shape[1]
+            alltargets = numpy.concatenate((alltargets,thismap.targets))
+
+        newm = copy.deepcopy(task)
+        # if all mappings are trained, the parallel mapping is also trained!
+        # (this is an exception to the standard, where you need data in order to
+        # train a prmapping)
+        if alltrained:
+            # do the constructor, but make sure that the hyperparameters are None:
+            w = prmapping(parallelm,None)
+            w.data = newm
+            # for the input size, just copy the shape of the first (DXD:
+            # check !!)
+            w.shape[0] = newm[0].shape[0]
+            w.shape[1] = allshapeout
+            w.targets = alltargets
+            w.mapping_type = 'trained'
+        else:
+            if x is None:
+                w = prmapping(parallelm,newm,x)
+            else:
+                newx = copy.deepcopy(x)
+                w = prmapping(parallelm,newm,newx)
+        w.name = "Parallel"
+        return w
+    if (task=='init'):
+        # just return the name, and hyperparameters
+        mapname = 'Parallel'
+        return mapname, x
+    elif (task=='train'):
+        # we are going to train all the mappings
+        u = copy.deepcopy(w)  # I hate Python..
+        allshapeout = 0
+        alltargets = numpy.ndarray((0,))
+        for i in range(len(u)):
+            x1 = copy.deepcopy(x) # Did I say that I hate Python??
+            if (u[i].mapping_type=='untrained'):
+                u[i] = u[i].train(x1)
+            # output size:
+            allshapeout += u[i].shape[1]
+            # collect the targets:
+            alltargets = numpy.concatenate((alltargets,u[i].targets))
+        return u, alltargets
+    elif (task=='eval'):
+        # we are applying to new data
+        W = w.data   # get the parameters out
+        out = W[0](x)
+        for i in range(1,len(W)):
+            # sigh, concatenation is different for matrices and datasets
+            if (isinstance(out,prdataset)):
+                out = out.concatenate(W[i](x),axis=1)
+            else:
+                out = numpy.concatenate((out,W[i](x)),axis=1)
+        return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for parallelm.')
+
+
+
 # === useful functions =====================================
 
 def plotc(f,levels=[0.0],colors=None,gridsize = 30):
