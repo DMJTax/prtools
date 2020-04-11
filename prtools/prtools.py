@@ -421,7 +421,10 @@ def bayesrule(task=None,x=None,w=None):
         return None,()
     elif (task=='eval'):
         # we are classifying new data
+        # make sure that when dataset in, we also do dataset out:
+        outputdataset = True
         if not isinstance(x,prdataset):
+            outputdataset = False
             x = prdataset(x)
         if (len(x.prior)>0):
             dat = x.data*x.prior
@@ -429,8 +432,11 @@ def bayesrule(task=None,x=None,w=None):
             dat = x.data
         Z = numpy.sum(dat,axis=1,keepdims=True)
         out = dat/(Z+1e-10)  # Or what to do here? What is eps?
-        x = x.setdata(out)
-        return x
+        if outputdataset:
+            x = x.setdata(out)
+            return x
+        else:
+            return out
     else:
         raise ValueError("Task '%s' is *not* defined for bayesrule."%task)
 
