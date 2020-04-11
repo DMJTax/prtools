@@ -240,11 +240,12 @@ def sequentialm(task=None,x=None,w=None):
             w = prmapping(sequentialm,None)
             w.data = newm
             w.shape[0] = newm[0].shape[0]
-            w.shape[1] = newm[1].shape[1]
             if (len(newm[1].targets)==0) and (newm[1].shape[1]==0):
                 # the second mapping does not have targets and sizes defined:
+                w.shape[1] = newm[0].shape[1]
                 w.targets = newm[0].targets
             else:
+                w.shape[1] = newm[1].shape[1]
                 w.targets = newm[1].targets
             w.mapping_type = 'trained'
             w.name = newm[0].name+'+'+newm[1].name
