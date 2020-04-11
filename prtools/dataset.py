@@ -213,7 +213,9 @@ class prdataset(object):
             out.targets = numpy.concatenate((out.targets,other.targets),axis=0)
             out._targets_ = numpy.concatenate((out._targets_,other._targets_),axis=0)
         elif (axis==1):
+            newfeatlab = numpy.concatenate((out.featlab,out.featlab))
             out = out.setdata(numpy.concatenate((out.data,other.data),axis=1))
+            out.featlab = newfeatlab
         else:
             raise ValueError("Concatenation is only possible along axis 0 or 1.")
         return out
