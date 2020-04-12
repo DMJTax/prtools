@@ -311,10 +311,11 @@ def parallelm(task=None,x=None,w=None):
 
         newm = copy.deepcopy(task)
         # if all mappings are trained, the parallel mapping is also trained!
-        # (this is an exception to the standard, where you need data in order to
-        # train a prmapping)
+        # (this is an exception to the standard, where you need data in
+        # order to train a prmapping)
         if alltrained:
-            # do the constructor, but make sure that the hyperparameters are None:
+            # do the constructor, but make sure that the hyperparameters
+            # are None:
             w = prmapping(parallelm,None)
             w.data = newm
             # for the input size, just copy the shape of the first (DXD:
@@ -363,6 +364,71 @@ def parallelm(task=None,x=None,w=None):
     else:
         print(task)
         raise ValueError('This task is *not* defined for parallelm.')
+
+def fixedcc(task=None,x=None,w=None):
+    """
+    Fixed classifier combiner
+    Currently, only the mean and product combinations are defined:
+    a = gendatb()
+    w1 = nmc()
+    w2 = ldc()
+    w3 = qdc()
+    u = parallelm([w1,w2,w3])*fixedcc('mean')
+    w = a*u
+    """
+    if (task in set(['mean','prod'])):
+        x = task
+        task = None
+    if not isinstance(task,str):
+        out = prmapping(fixedcc,task,x)
+        out.mapping_type = "trained"
+        # DXD this is a hack: avoid copying the targets of the previous
+        # mapping (probably a parallelm) to the output
+        out.shape[1]=-1  
+        if task is not None:
+            out = out(task)
+        return out
+    if (task=='init'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = 'mean'
+        return 'Classifier combiner', x
+    elif (task=='train'):
+        # nothing to train
+        return None,()
+    elif (task=='eval'):
+        # we are classifying new data
+        # we need a dataset for the feature labels
+        outputdataset = True
+        if not isinstance(x,prdataset):
+            outputdataset = False
+            x = prdataset(x)
+        # get the feature labels
+        (flist,I) = numpy.unique(x.featlab,return_inverse=True)
+        out = numpy.zeros((x.shape[0],len(flist)))
+        # run over the sets:
+        for i in range(len(flist)):
+            J = numpy.where(I==i)[0]
+            C = J.shape[0]
+            xi = x[:,J]
+            if (w.hyperparam=='mean'):
+                # mean combination:
+                out[:,i:(i+1)] = numpy.mean(+xi,axis=1,keepdims=True)
+            elif (w.hyperparam=='prod'):
+                # mean combination:
+                out[:,i:(i+1)] = numpy.prod(+xi,axis=1,keepdims=True)
+            else:
+                raise ValueError("Combining '%s' is *not* defined for\
+                        fixedcc."%w.hyperparam)
+
+        if outputdataset:
+            x = x.setdata(out)
+            x.featlab = flist
+            return x
+        else:
+            return out
+    else:
+        raise ValueError("Task '%s' is *not* defined for fixedcc."%task)
 
 
 
