@@ -663,7 +663,8 @@ def knnm(task=None,x=None,w=None):
             x = [x]
         if (x[0]<1):
             raise ValueError('kNN: Please use a positive value for K!')
-        return 'k-Nearest neighbor', x
+        name = '%d-NN'%x[0]
+        return name, x
     elif (task=='train'):
         # we only need to store the data
         # store the parameters, and labels:
@@ -695,7 +696,8 @@ def knnc(task=None,x=None,w=None):
     Computation of the K-nearest neighbor classifier for the dataset A. 
     Default: K=1
     """
-    return knnm(task,x)*bayesrule()
+    out = knnm(task,x)*bayesrule()
+    return out
 
 def parzenm(task=None,x=None,w=None):
     """
