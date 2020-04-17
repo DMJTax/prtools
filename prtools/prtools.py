@@ -577,14 +577,22 @@ def nmc(task=None,x=None,w=None):
         # we are going to train the mapping
         c = x.nrclasses()
         mn = numpy.zeros((c,x.shape[1]))
+        v = 0.
+        prior = x.getprior()
         for i in range(c):
             xi = seldat(x,i)
             mn[i,:] = numpy.mean(+xi,axis=0)
+            v += prior[i]*numpy.mean(numpy.var(+xi,axis=0))
         # store the parameters, and labels:
-        return mn,x.lablist()
+        scale = 1./(2*v)
+        return (mn,scale,prior),x.lablist()
     elif (task=='eval'):
         # we are applying to new data
-        return -sqeucldist(+x,w.data)
+        mn,scale,prior = w.data
+        out = numpy.exp(-scale*sqeucldist(+x,mn))
+        outp = prior*out
+        return outp/numpy.sum(outp,axis=1,keepdims=True)
+        #return -sqeucldist(+x,mn)
     else:
         raise ValueError("Task '%s' is *not* defined for nmc."%task)
 
