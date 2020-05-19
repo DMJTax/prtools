@@ -425,8 +425,14 @@ def fixedcc(task=None,x=None,w=None):
                 # mean combination:
                 out[:,i:(i+1)] = numpy.mean(+xi,axis=1,keepdims=True)
             elif (w.hyperparam[0]=='prod'):
-                # mean combination:
+                # product combination:
                 out[:,i:(i+1)] = numpy.prod(+xi,axis=1,keepdims=True)
+            elif (w.hyperparam[0]=='min'):
+                # mean combination:
+                out[:,i:(i+1)] = numpy.min(+xi,axis=1,keepdims=True)
+            elif (w.hyperparam[0]=='max'):
+                # max combination:
+                out[:,i:(i+1)] = numpy.max(+xi,axis=1,keepdims=True)
             elif (w.hyperparam[0]=='pow'):
                 # powered combination:
                 out[:,i:(i+1)] = numpy.power( \
