@@ -155,7 +155,10 @@ class prmapping(object):
             if not isinstance(x,prdataset):
                 newx = prdataset(newx)
             newx.featlab = self.targets
-        if isinstance(x,prdataset) and (len(self.targets)>0):
+        # tricky: if I don't input a prdataset, should I return one?
+        #  For parallelm I need a prdataset as output!
+        #if isinstance(x,prdataset) and (len(self.targets)>0):
+        if (len(self.targets)>0):
             newx.setdata(+out)
         else:
             newx = out
@@ -368,16 +371,23 @@ def parallelm(task=None,x=None,w=None):
 def fixedcc(task=None,x=None,w=None):
     """
     Fixed classifier combiner
-    Currently, only the mean and product combinations are defined:
+    Combine the output of a parallel combiner using
+    TASK = 'mean'    mean combiner
+           'prod'    product combiner
+           'min'     minimum combiner
+           'max'     maximum combiner
+           'pow',P   powered combination:   = (sum_i (p_i^P) )^(1/P)
+
     a = gendatb()
-    w1 = nmc()
-    w2 = ldc()
-    w3 = qdc()
-    u = parallelm([w1,w2,w3])*fixedcc('mean')
+    u = parallelm([nmc(),ldc(),qdc()])*fixedcc('mean')
+    u = parallelm([nmc(),ldc(),qdc()])*fixedcc('pow',3)
     w = a*u
     """
-    if (task in set(['mean','prod'])):
-        x = task
+    if (task in set(['mean','prod','min','max','pow'])):
+        if (task=='pow'):
+            x = [task,x]
+        else:
+            x = [task]
         task = None
     if not isinstance(task,str):
         out = prmapping(fixedcc,task,x)
@@ -391,7 +401,7 @@ def fixedcc(task=None,x=None,w=None):
     if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
-            x = 'mean'
+            x = ['mean']
         return 'Classifier combiner', x
     elif (task=='train'):
         # nothing to train
@@ -411,12 +421,17 @@ def fixedcc(task=None,x=None,w=None):
             J = numpy.where(I==i)[0]
             C = J.shape[0]
             xi = x[:,J]
-            if (w.hyperparam=='mean'):
+            if (w.hyperparam[0]=='mean'):
                 # mean combination:
                 out[:,i:(i+1)] = numpy.mean(+xi,axis=1,keepdims=True)
-            elif (w.hyperparam=='prod'):
+            elif (w.hyperparam[0]=='prod'):
                 # mean combination:
                 out[:,i:(i+1)] = numpy.prod(+xi,axis=1,keepdims=True)
+            elif (w.hyperparam[0]=='pow'):
+                # powered combination:
+                out[:,i:(i+1)] = numpy.power( \
+                        numpy.sum((+xi)**w.hyperparam[1],axis=1,keepdims=True),\
+                        1/w.hyperparam[1])
             else:
                 raise ValueError("Combining '%s' is *not* defined for\
                         fixedcc."%w.hyperparam)
