@@ -261,7 +261,10 @@ def classc(task=None,x=None,w=None):
         if (numpy.any(+x<0.)):
             print('classc(): Suspicious negative values in Classc.')
         sumx = numpy.sum(+x,axis=1,keepdims=True)
-        x.setdata( +x/sumx )
+        if isinstance(x,prdataset):
+            x.setdata( +x/sumx )
+        else:
+            x = x/sumx
         return x
     else:
         raise ValueError("Task '%s' is *not* defined for classc."%task)
