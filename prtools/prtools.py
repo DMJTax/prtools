@@ -261,7 +261,10 @@ def classc(task=None,x=None,w=None):
         if (numpy.any(+x<0.)):
             print('classc(): Suspicious negative values in Classc.')
         sumx = numpy.sum(+x,axis=1,keepdims=True)
-        x.setdata( +x/sumx )
+        if isinstance(x,prdataset):
+            x.setdata( +x/sumx )
+        else:
+            x = x/sumx
         return x
     else:
         raise ValueError("Task '%s' is *not* defined for classc."%task)
@@ -421,7 +424,11 @@ def bayesrule(task=None,x=None,w=None):
         return None,()
     elif (task=='eval'):
         # we are classifying new data
+        # make sure that when a dataset is given as input, we also do
+        # dataset out, and when a data matrix in, then also a matrix out:
+        outputdataset = True
         if not isinstance(x,prdataset):
+            outputdataset = False
             x = prdataset(x)
         if (len(x.prior)>0):
             dat = x.data*x.prior
@@ -429,8 +436,11 @@ def bayesrule(task=None,x=None,w=None):
             dat = x.data
         Z = numpy.sum(dat,axis=1,keepdims=True)
         out = dat/(Z+1e-10)  # Or what to do here? What is eps?
-        x = x.setdata(out)
-        return x
+        if outputdataset:
+            x = x.setdata(out)
+            return x
+        else:
+            return out
     else:
         raise ValueError("Task '%s' is *not* defined for bayesrule."%task)
 
@@ -570,14 +580,22 @@ def nmc(task=None,x=None,w=None):
         # we are going to train the mapping
         c = x.nrclasses()
         mn = numpy.zeros((c,x.shape[1]))
+        v = 0.
+        prior = x.getprior()
         for i in range(c):
             xi = seldat(x,i)
             mn[i,:] = numpy.mean(+xi,axis=0)
+            v += prior[i]*numpy.mean(numpy.var(+xi,axis=0))
         # store the parameters, and labels:
-        return mn,x.lablist()
+        scale = 1./(2*v)
+        return (mn,scale,prior),x.lablist()
     elif (task=='eval'):
         # we are applying to new data
-        return -sqeucldist(+x,w.data)
+        mn,scale,prior = w.data
+        out = numpy.exp(-scale*sqeucldist(+x,mn))
+        outp = prior*out
+        return outp/numpy.sum(outp,axis=1,keepdims=True)
+        #return -sqeucldist(+x,mn)
     else:
         raise ValueError("Task '%s' is *not* defined for nmc."%task)
 
@@ -656,7 +674,8 @@ def knnm(task=None,x=None,w=None):
             x = [x]
         if (x[0]<1):
             raise ValueError('kNN: Please use a positive value for K!')
-        return 'k-Nearest neighbor', x
+        name = '%d-NN'%x[0]
+        return name, x
     elif (task=='train'):
         # we only need to store the data
         # store the parameters, and labels:
@@ -688,7 +707,8 @@ def knnc(task=None,x=None,w=None):
     Computation of the K-nearest neighbor classifier for the dataset A. 
     Default: K=1
     """
-    return knnm(task,x)*bayesrule()
+    out = knnm(task,x)*bayesrule()
+    return out
 
 def parzenm(task=None,x=None,w=None):
     """

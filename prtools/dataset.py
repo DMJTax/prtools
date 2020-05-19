@@ -174,6 +174,9 @@ class prdataset(object):
 
     def __getitem__(self,key):
         newd = copy.deepcopy(self)
+        # be resistant to 'integer ndarray' indices:
+        if isinstance(key[1],numpy.ndarray):
+            key = (key[0], key[1].tolist())
         # when we select columns (features), we have to take care of the
         # feature labels, because that is a *list*:
         if isinstance(key[1],slice):
@@ -186,6 +189,8 @@ class prdataset(object):
             newd.data = newd.data[:,key[1]] # ndarrays can handle it
             newd.featlab = [newd.featlab[i] for i in key[1]]
         else:
+            print(key[1])
+            print(type(key[1]))
             raise ValueError("Only slices or integer lists can be used in indexing.")
         # we select objects: in the data and targets
         newd.data = newd.data[key[0],:]
@@ -213,7 +218,9 @@ class prdataset(object):
             out.targets = numpy.concatenate((out.targets,other.targets),axis=0)
             out._targets_ = numpy.concatenate((out._targets_,other._targets_),axis=0)
         elif (axis==1):
+            newfeatlab = numpy.concatenate((out.featlab,out.featlab))
             out = out.setdata(numpy.concatenate((out.data,other.data),axis=1))
+            out.featlab = newfeatlab
         else:
             raise ValueError("Concatenation is only possible along axis 0 or 1.")
         return out

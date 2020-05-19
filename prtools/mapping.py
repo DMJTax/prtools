@@ -127,7 +127,8 @@ class prmapping(object):
         if (hasattr(x,'shape')):  # combiners do not eat datasets
             self.shape[0] = x.shape[1]
             # and the output size?
-            xx = +x[:1,:]   # hmmm??
+            #xx = +x[:1,:]   # hmmm??
+            xx = x[:1,:]   # or??
             out = self.mapping_func('eval',xx,self)
             self.shape[1] = out.shape[1]
         return self
@@ -154,7 +155,10 @@ class prmapping(object):
             if not isinstance(x,prdataset):
                 newx = prdataset(newx)
             newx.featlab = self.targets
-        if isinstance(x,prdataset) and (len(self.targets)>0):
+        # tricky: if I don't input a prdataset, should I return one?
+        #  For parallelm I need a prdataset as output!
+        #if isinstance(x,prdataset) and (len(self.targets)>0):
+        if (len(self.targets)>0):
             newx.setdata(+out)
         else:
             newx = out
@@ -186,7 +190,7 @@ class prmapping(object):
             # return an 'untrained' mapping, while it *might* be possible to
             # get a trained one when the two input mappings are already
             # trained:
-            out = sequentialm((leftm,rightm))
+            out = sequentialm([leftm,rightm])
             return out
         else:
             raise ValueError('Prmapping times something not defined.')
@@ -220,7 +224,7 @@ def sequentialm(task=None,x=None,w=None):
     "Sequential mapping"
     if not isinstance(task,str):
         # we should have gotten a list of two prmappings
-        if not isinstance(task,tuple):
+        if not isinstance(task,list):
             raise ValueError('Sequential map expects a list of 2 prmappings.')
         if not isinstance(task[0],prmapping):
             raise ValueError('Sequential map expects a list of 2 prmappings.')
@@ -240,11 +244,12 @@ def sequentialm(task=None,x=None,w=None):
             w = prmapping(sequentialm,None)
             w.data = newm
             w.shape[0] = newm[0].shape[0]
-            w.shape[1] = newm[1].shape[1]
             if (len(newm[1].targets)==0) and (newm[1].shape[1]==0):
                 # the second mapping does not have targets and sizes defined:
+                w.shape[1] = newm[0].shape[1]
                 w.targets = newm[0].targets
             else:
+                w.shape[1] = newm[1].shape[1]
                 w.targets = newm[1].targets
             w.mapping_type = 'trained'
             w.name = newm[0].name+'+'+newm[1].name
@@ -290,6 +295,163 @@ def sequentialm(task=None,x=None,w=None):
     else:
         print(task)
         raise ValueError('This task is *not* defined for sequentialm.')
+
+def parallelm(task=None,x=None,w=None):
+    "Parallel mapping"
+    if not isinstance(task,str):
+        # we should have gotten a list of prmappings
+        if not isinstance(task,list):
+            raise ValueError('Parallel map expects a list of prmappings.')
+        alltrained = True
+        allshapeout = 0
+        alltargets = numpy.ndarray((0,))
+        for thismap in task:
+            if not isinstance(thismap,prmapping):
+                raise ValueError('Parallel map expects a list of prmappings.')
+            alltrained = alltrained and (thismap.mapping_type=='trained')
+            allshapeout += thismap.shape[1]
+            alltargets = numpy.concatenate((alltargets,thismap.targets))
+
+        newm = copy.deepcopy(task)
+        # if all mappings are trained, the parallel mapping is also trained!
+        # (this is an exception to the standard, where you need data in
+        # order to train a prmapping)
+        if alltrained:
+            # do the constructor, but make sure that the hyperparameters
+            # are None:
+            w = prmapping(parallelm,None)
+            w.data = newm
+            # for the input size, just copy the shape of the first (DXD:
+            # check !!)
+            w.shape[0] = newm[0].shape[0]
+            w.shape[1] = allshapeout
+            w.targets = alltargets
+            w.mapping_type = 'trained'
+        else:
+            if x is None:
+                w = prmapping(parallelm,newm,x)
+            else:
+                newx = copy.deepcopy(x)
+                w = prmapping(parallelm,newm,newx)
+        w.name = "Parallel"
+        return w
+    if (task=='init'):
+        # just return the name, and hyperparameters
+        mapname = 'Parallel'
+        return mapname, x
+    elif (task=='train'):
+        # we are going to train all the mappings
+        u = copy.deepcopy(w)  # I hate Python..
+        allshapeout = 0
+        alltargets = numpy.ndarray((0,))
+        for i in range(len(u)):
+            x1 = copy.deepcopy(x) # Did I say that I hate Python??
+            if (u[i].mapping_type=='untrained'):
+                u[i] = u[i].train(x1)
+            # output size:
+            allshapeout += u[i].shape[1]
+            # collect the targets:
+            alltargets = numpy.concatenate((alltargets,u[i].targets))
+        return u, alltargets
+    elif (task=='eval'):
+        # we are applying to new data
+        W = w.data   # get the parameters out
+        out = W[0](x)
+        for i in range(1,len(W)):
+            # sigh, concatenation is different for matrices and datasets
+            if (isinstance(out,prdataset)):
+                out = out.concatenate(W[i](x),axis=1)
+            else:
+                out = numpy.concatenate((out,W[i](x)),axis=1)
+        return out
+    else:
+        print(task)
+        raise ValueError('This task is *not* defined for parallelm.')
+
+def fixedcc(task=None,x=None,w=None):
+    """
+    Fixed classifier combiner
+    Combine the output of a parallel combiner using
+    TASK = 'mean'    mean combiner
+           'prod'    product combiner
+           'min'     minimum combiner
+           'max'     maximum combiner
+           'pow',P   powered combination:   = (sum_i (p_i^P) )^(1/P)
+
+    a = gendatb()
+    u = parallelm([nmc(),ldc(),qdc()])*fixedcc('mean')
+    u = parallelm([nmc(),ldc(),qdc()])*fixedcc('pow',3)
+    w = a*u
+    """
+    if (task in set(['mean','prod','min','max','pow'])):
+        if (task=='pow'):
+            x = [task,x]
+        else:
+            x = [task]
+        task = None
+    if not isinstance(task,str):
+        out = prmapping(fixedcc,task,x)
+        out.mapping_type = "trained"
+        # DXD this is a hack: avoid copying the targets of the previous
+        # mapping (probably a parallelm) to the output
+        out.shape[1]=-1  
+        if task is not None:
+            out = out(task)
+        return out
+    if (task=='init'):
+        # just return the name, and hyperparameters
+        if x is None:
+            x = ['mean']
+        return 'Classifier combiner', x
+    elif (task=='train'):
+        # nothing to train
+        return None,()
+    elif (task=='eval'):
+        # we are classifying new data
+        # we need a dataset for the feature labels
+        outputdataset = True
+        if not isinstance(x,prdataset):
+            outputdataset = False
+            x = prdataset(x)
+        # get the feature labels
+        (flist,I) = numpy.unique(x.featlab,return_inverse=True)
+        out = numpy.zeros((x.shape[0],len(flist)))
+        # run over the sets:
+        for i in range(len(flist)):
+            J = numpy.where(I==i)[0]
+            C = J.shape[0]
+            xi = x[:,J]
+            if (w.hyperparam[0]=='mean'):
+                # mean combination:
+                out[:,i:(i+1)] = numpy.mean(+xi,axis=1,keepdims=True)
+            elif (w.hyperparam[0]=='prod'):
+                # product combination:
+                out[:,i:(i+1)] = numpy.prod(+xi,axis=1,keepdims=True)
+            elif (w.hyperparam[0]=='min'):
+                # mean combination:
+                out[:,i:(i+1)] = numpy.min(+xi,axis=1,keepdims=True)
+            elif (w.hyperparam[0]=='max'):
+                # max combination:
+                out[:,i:(i+1)] = numpy.max(+xi,axis=1,keepdims=True)
+            elif (w.hyperparam[0]=='pow'):
+                # powered combination:
+                out[:,i:(i+1)] = numpy.power( \
+                        numpy.sum((+xi)**w.hyperparam[1],axis=1,keepdims=True),\
+                        1/w.hyperparam[1])
+            else:
+                raise ValueError("Combining '%s' is *not* defined for\
+                        fixedcc."%w.hyperparam)
+
+        if outputdataset:
+            x = x.setdata(out)
+            x.featlab = flist
+            return x
+        else:
+            return out
+    else:
+        raise ValueError("Task '%s' is *not* defined for fixedcc."%task)
+
+
 
 # === useful functions =====================================
 
