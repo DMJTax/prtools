@@ -436,7 +436,7 @@ def fixedcc(task=None,x=None,w=None):
             elif (w.hyperparam[0]=='pow'):
                 # powered combination:
                 out[:,i:(i+1)] = numpy.power( \
-                        numpy.sum((+xi)**w.hyperparam[1],axis=1,keepdims=True),\
+                        numpy.mean((+xi)**w.hyperparam[1],axis=1,keepdims=True),\
                         1/w.hyperparam[1])
             else:
                 raise ValueError("Combining '%s' is *not* defined for\
