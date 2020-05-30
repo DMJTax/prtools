@@ -493,7 +493,8 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
         otherout[:,i] = -numpy.inf
         z = out[:,i] - numpy.amax(otherout,axis=1)
         z.shape = (gridsize,gridsize)
-        plt.contour(x,y,z,levels,colors=colors)
+        CS = plt.contour(x,y,z,levels,colors=colors)
+    CS.collections[0].set_label(f.name)
 
 def plotm(f,nrlevels=10,colors=None,gridsize = 30):
     """
@@ -538,7 +539,8 @@ def plotm(f,nrlevels=10,colors=None,gridsize = 30):
         z = out[:,i]
         levels = numpy.linspace(numpy.min(z),numpy.max(z),nrlevels)
         z.shape = (gridsize,gridsize)
-        plt.contour(x,y,z,levels,colors=colors)
+        CS = plt.contour(x,y,z,levels,colors=colors)
+    CS.collections[0].set_label(f.name)
 
 def plotr(f,color=None,gridsize=100):
     """
