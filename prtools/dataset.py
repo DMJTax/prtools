@@ -408,7 +408,8 @@ def gendat(x,n,seed=None):
     if isinstance(n[0],float) and (n[0]<1.): # a vector/list of fractions
         n = n*clsz
     # take care for the seed:
-    numpy.random.seed(seed)
+    if seed is not None:
+        numpy.random.seed(seed)
     # now generate the data:
     i=0  # first class is special:
     x1 = seldat(x,i)
