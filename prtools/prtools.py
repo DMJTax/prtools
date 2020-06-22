@@ -39,6 +39,11 @@ A (small) subset of the methods are:
 
     pcam      PCA
     
+    featseli  individual feature selection
+    featsetf  sequential forward feature selection
+    featselb  sequential backward feature selection
+    feateval  feature evaluation
+
 A (small) subset of datasets:
     gendatb   banana-shaped dataset
     gendats   simple dataset
@@ -49,20 +54,15 @@ A (small) subset of datasets:
 """
 
 from prtools import *
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.cluster import KMeans, AgglomerativeClustering
-from sklearn.neighbors import KNeighborsClassifier, DistanceMetric
-from sklearn.model_selection import StratifiedKFold, LeaveOneOut
 from sklearn.metrics import davies_bouldin_score, accuracy_score
 from sklearn import svm
 from sklearn import linear_model
 from sklearn import tree
 
 from sklearn.decomposition import PCA, FastICA
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.manifold import LocallyLinearEmbedding, Isomap
 
-from mlxtend.feature_selection import SequentialFeatureSelector
 import sys
 
 
