@@ -2323,209 +2323,262 @@ def isomapm(task=None, x=None, w=None):
     else:
         raise ValueError("Task '%s' is *not* defined for isomap."%task)
 
-def featselb(task=None, x=None, w=None):
+def feateval(task=None,x=None,w=None):
     """
-    Trainable mapping for backward feature selection
+    Evaluation of a feature set
 
-           w = featselb(A, (CLF, K, N))
+          J = feateval(A,crit)
 
-    Backward selection of K features using the dataset A. CLF corresponds to the classifier that will be used
-    to evaluate the accuracy of the subsets. The number of cross-validation folds N has to be provided.
-    w.targets can be used to view the selected features.
+    Evaluation of features by the criterion CRIT, using objects in the
+    dataset A.  The larger J, the better. Resulting J-values are
+    incomparable over the various methods.
+    crit='1NN'     Leave-one-out 1-nearest neighbor performance
+    crit='in-in'   inter-intra distances
+    crit='eucl-s'  sum of (squared) euclidean distances between class means
+    crit='eucl-m'  minimum of (squared) euclidean distances between class means
 
-    The following classifiers CLF are defined:
-    '1NN'    1 Nearest Neightbour (default)
-    'LDA'    Linear Discriminant Analysis
+    When the criterion is an untrained classifier, the apparent error is
+    used. One can also request the K-fold cross-validation error using:
+    crit = ['crossval', ldc(), K]
 
     Example:
-    a = gendat()
-    w = featselb(a, ('1NN', 4, 10))
-    """
-    return featsel(task, (x[0], x[1], False, x[2]), w)
-
-def featself(task=None, x=None, w=None):
-    """
-    Trainable mapping for forward feature selection
-
-           w = featself(A, (CLF, K, N))
-
-    Forward selection of K features using the dataset A. CLF corresponds to the classifier that will be used
-    to evaluate the accuracy of the subsets. The number of cross-validation folds N has to be provided.
-    w.targets can be used to view the selected features.
-
-    The following classifiers CLF are defined:
-    '1NN'    1 Nearest Neightbour (default)
-    'LDA'    Linear Discriminant Analysis
-
-    Example:
-    a = gendat()
-    w = featself(a, ('1NN', 4, 10))
-    """
-    return featsel(task, (x[0], x[1], True, x[2]), w)
-
-def featsel(task=None, x=None, w=None):
-    """
-    Sequential Feature Selector
-
-           w = featsel(A, (CLF, K, FORWARD, N))
-
-    Selection of K features using the dataset A. CLF corresponds to the classifier that will be used
-    to evaluate the accuracy of the subsets. FORWARD can be set to True for forward feature selection
-    or False for backward feature selection. The number of cross-validation folds N has to be provided.
-
-    The following classifiers CLF are defined:
-    '1NN'    1 Nearest Neightbour (default)
-    'LDA'    Linear Discriminant Analysis
-
-    Example:
-    a = gendat()
-    w = featsel(a, ('1NN', 4, True, 10))
+    >> A = gendatb()
+    >> e = feateval(A,'in-in')
+    >> e = feateval(A,ldc())
+    >> e = feateval(A,['crossval',ldc(),10])
     """
     if not isinstance(task,str):
-        out = prmapping(featsel, task, x)
+        out = prmapping(feateval,x)
+        out.mapping_type = "trained"
+        if task is not None:
+            out = out(task)
         return out
     if (task=='init'):
-        # just return the name, and hyperparameters
+        # find out if we use a prespecified criterion, on a prmapping
         if x is None:
-            clf = '1NN'
-            features = 1
-            setting = False
-            folds = 10
-        else:
-            clf = x[0]
-            features = x[1]
-            setting = x[2]
-            folds = x[3]
-        if clf == '1NN':
-            clf = KNeighborsClassifier(n_neighbors=1)
-        if clf == 'LDA':
-            clf = LinearDiscriminantAnalysis()
-        sfs = SequentialFeatureSelector(clf, k_features=features, forward=setting, floating=False,
-                                        verbose=0, scoring='accuracy', cv=folds)
-        return 'Sequential Feature Selector', sfs
+            x = ldc()
+        if isinstance(x,prmapping):
+            x = ['app.err.', x]
+        if isinstance(x,tuple):
+            x = list(x)
+        # just return the name, and hyperparameters
+        return 'Feature evaluation', x
     elif (task=='train'):
-        # we are going to train the mapping
-        X = +x
-        y = x.targets
-        sfs = copy.deepcopy(w)
-        sfs = sfs.fit(X, y.ravel())
-        return sfs, sfs.k_feature_idx_
+        # nothing to train
+        return None,0
     elif (task=='eval'):
-        # we are applying to new data
-        sfs = w.data
-        pred = x[:, list(sfs.k_feature_idx_)]
-        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
-            pred = pred[:,numpy.newaxis]
-        return pred
+        # we are evaluating the features:
+        J = 0
+        if isinstance(w.hyperparam,list):
+            if (w.hyperparam[0]=='app.err.'):
+                # use the apparent error of the given classifier
+                classif = x*w.hyperparam[1]
+                J = numpy.mean(labeld(x*classif) != x.targets)*1.
+            elif (w.hyperparam[0]=='crossval'):
+                J = prcrossval(x,w.hyperparam[1],w.hyperparam[2])
+                J = numpy.mean(J)
+        elif (w.hyperparam=='1NN'):
+            # Leave-one-out 1-nearest neighbor
+            lab = a.nlab()
+            D = sqeucldist(+a,+a)
+            for i in range(a.shape[0]):
+                D[i,i] = numpy.inf
+            I = numpy.argmin(D,axis=0)
+            J = numpy.mean((lab == lab[I])*1.)
+        elif (w.hyperparam=='eucl-m'):
+            # minimum of (squared) euclidean distances between class means
+            c = x.nrclasses()
+            dim = x.shape[1]
+            mn = numpy.zeros((c,dim))
+            for i in range(c):
+                xi = seldat(x,i)
+                mn[i,:] = numpy.mean(+xi,axis=0)
+            D = sqeucldist(mn,mn)
+            for i in range(c):
+                D[i,i] = numpy.inf
+            J = numpy.min(D)
+        elif (w.hyperparam=='eucl-s'):
+            # sum of (squared) euclidean distances between class means
+            c = x.nrclasses()
+            dim = x.shape[1]
+            mn = numpy.zeros((c,dim))
+            for i in range(c):
+                xi = seldat(x,i)
+                mn[i,:] = numpy.mean(+xi,axis=0)
+            D = sqeucldist(mn,mn)
+            J = numpy.sum(D)/2.
+        elif (w.hyperparam=='in-in'):
+            # inter-intra distances
+            c = x.nrclasses()
+            dim = x.shape[1]
+            mn = numpy.zeros((c,dim))
+            cv = numpy.zeros((c,dim,dim))
+            for i in range(c):
+                xi = seldat(x,i)
+                mn[i,:] = numpy.mean(+xi,axis=0)
+                cv[i,:,:] = numpy.cov(+xi,rowvar=False)
+            S_b = numpy.cov(mn,rowvar=False)  # between scatter
+            S_w = numpy.mean(cv,axis=0) # within scatter
+            J = numpy.trace(numpy.linalg.pinv(S_w).dot(S_b))
+        return J
     else:
-        raise ValueError("Task '%s' is *not* defined for feature selection."%task)
+        raise ValueError("Task '%s' is *not* defined for feateval."%task)
 
 def featseli(task=None, x=None, w=None):
     """
-    Trainable mapping for individual feature selection
+    Individual Feature Selector
 
-     w = featseli(A, (CLF, K, N))
+           w = featseli(A, (K,CRIT))
 
-    Individual selection of K features using the dataset A. CLF corresponds to the classifier that will be used
-    to evaluate the accuracy achieved via each feature individually. The number of cross-validation folds N has
-    to be provided. w.targets can be used to view the selected features.
-
-    The following classifiers CLF are defined:
-    '1NN'    1 Nearest Neightbour (default)
-    'LDA'    Linear Discriminant Analysis
+    Individual feature selection of K features using the dataset A. The
+    criterion is defined by CRIT; for more information for possible
+    criteria, see FEATEVAL.
 
     Example:
     a = gendat()
-    w = featseli(a, ('1NN', 4, 10))
+    w = featseli(a, (4,ldc()))
     """
     if not isinstance(task,str):
         out = prmapping(featseli, task, x)
         return out
     if (task=='init'):
         # just return the name, and hyperparameters
+        if isinstance(x,int):
+            x = [x, ldc()]
         if x is None:
-            x[0] = '1NN'
-            x[1] = 1
-            x[2] = 10
+            x = [numpy.inf,ldc()]
         return 'Individual Feature Selector', x
     elif (task=='train'):
         # we are going to train the mapping
-        X = +x
-        y = x.targets
-        fs = copy.deepcopy(w)
-        if w[0] == '1NN':
-            clf = KNeighborsClassifier(n_neighbors=1)
-        if w[0] == 'LDA':
-            clf = LinearDiscriminantAnalysis()
-        skf = StratifiedKFold(n_splits=w[2])
-        feat_accuracy = []  # average classification accuracy per individual feature
-        # For every feature individually
-        for feat in range(X.shape[1]):
-            feat_accuracy_per_fold = []  # accuracy for specific feature per fold
-            # Perform k-fold cross validation
-            for train_index, test_index in skf.split(X, y):
-                # Stratified train-test splits
-                X_train, X_test = X[train_index, feat], X[test_index, feat]
-                y_train, y_test = y[train_index], y[test_index]
-                clf.fit(X_train.reshape(-1, 1), y_train.ravel())
-                y_pred = clf.predict(X_test.reshape(-1, 1))
-                feat_accuracy_per_fold.append(accuracy_score(y_test, y_pred))
-            feat_accuracy.append(numpy.mean(feat_accuracy_per_fold))
-        sorted_idx = numpy.argsort(feat_accuracy)  # list is sorted in ascending order, return K last elements
-        return fs, sorted_idx[-w[1]:]
+        K = w[0]
+        if (K>x.shape[1]):
+            K = x.shape[1] # we want all the features, ordered 
+        # the list of features to choose from:
+        I = list(range(x.shape[1]))
+        perf = numpy.zeros((x.shape[1]))
+        for i in I:
+            perf[i] = feateval(x[:,i:(i+1)] ,w[1])
+        # sort them:
+        J = numpy.argsort(-perf)
+        J = J[:K]
+        # done, we found our K features
+        featlab = [x.featlab[j] for j in J]
+        return J,featlab
     elif (task=='eval'):
         # we are applying to new data
-        pred = x[:, w.targets]
-        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
-            pred = pred[:,numpy.newaxis]
-        return pred
+        return x[:,w.data]
     else:
         raise ValueError("Task '%s' is *not* defined for feature selection."%task)
 
-def feateval(a, x=None):
+def featself(task=None, x=None, w=None):
     """
-    Evaluation of feature set for classification
+    Sequential Forward Feature Selector
 
-     J = feateval(A, CRIT)
+           w = featself(A, (K,CRIT))
 
-    Evaluation of features by the criterion CRIT, using objects in the dataset A.
-    The larger J, the better. Resulting J-values are incomparable over the various methods.
-
-    The following CRIT methods are defined:
-    '1NN'    1 Nearest Neightbou classification performance (default)
-    'eucl-s'    sum of squared Euclidean distances
-    'eucl-m'    minimum of squared Euclidean distances
+    Forward feature selection of K features using the dataset A. The
+    criterion is defined by CRIT; for more information for possible
+    criteria, see FEATEVAL.
 
     Example:
     a = gendat()
-    e = feateval(a, 'eucl-s')
+    w = featself(a, (4,ldc()))
     """
-    X = +a
-    y = a.targets
-    if x == '1NN':
-        clf = KNeighborsClassifier(n_neighbors=1)
-        loo = LeaveOneOut()
-        loo.get_n_splits(X)
-        accuracy_per_fold = []
-        # Leave-one-out for 1NN
-        for train_index, test_index in loo.split(X):
-            X_train, X_test = X[train_index], X[test_index]
-            y_train, y_test = y[train_index], y[test_index]
-            clf.fit(X_train, y_train.ravel())
-            y_pred = clf.predict(X_test)
-            accuracy_per_fold.append(accuracy_score(y_test, y_pred))
-        metric = numpy.mean(accuracy_per_fold)
-    elif x == 'eucl-s' or x == 'eucl-m':
-        U = []
-        unique_classes = numpy.unique(y)
-        for lab in unique_classes:
-            U.append(numpy.mean(X[numpy.where(y == lab)[0], :], axis=0))
-        dist = DistanceMetric.get_metric('euclidean')
-        D = numpy.power(dist.pairwise(U), 2)
-        if x == 'eucl-s':
-            metric = numpy.sum(D)/2
-        elif x == 'eucl-m':
-            D = D + sys.float_info.max * numpy.eye(len(unique_classes))
-            metric = numpy.min(D)
-    return metric
+    if not isinstance(task,str):
+        out = prmapping(featself, task, x)
+        return out
+    if (task=='init'):
+        # just return the name, and hyperparameters
+        if isinstance(x,int):
+            x = [x, ldc()]
+        if x is None:
+            x = [numpy.inf,ldc()]
+        return 'Sequential Forward Feature Selector', x
+    elif (task=='train'):
+        # we are going to train the mapping
+        K = w[0]
+        if (numpy.isinf(K)):
+            K = x.shape[1] # we want all the features, ordered 
+        # the list of features to choose from:
+        I = list(range(x.shape[1]))
+        x_prev = x[:,:0]
+        J = []    # the choosen features
+        for k in range(K):
+            # choose the k'th feature:
+            # select from the candidates:
+            perf = -numpy.ones((x.shape[1]))
+            for i in I:
+                x_new = x_prev.concatenate(x[:,i:(i+1)],axis=1)
+                perf[i] = feateval(x_new,w[1])
+            # select the best one:
+            Jadd = numpy.argmax(perf)
+            #print('The %d-th feature is feature %d.'%(k,Jadd)) 
+            # update our variables
+            J.append(Jadd)
+            I.remove(Jadd)
+            x_prev = x_prev.concatenate(x[:,Jadd:(Jadd+1)],axis=1)
+        # done, we found our K features
+        featlab = [x.featlab[j] for j in J]
+        return J,featlab
+    elif (task=='eval'):
+        # we are applying to new data
+        return x[:,w.data]
+    else:
+        raise ValueError("Task '%s' is *not* defined for feature selection."%task)
+
+def featselb(task=None, x=None, w=None):
+    """
+    Sequential Backward Feature Selector
+
+           w = featselb(A, (K,CRIT))
+
+    Backward feature selection of K features using the dataset A. The
+    criterion is defined by CRIT; for more information for possible
+    criteria, see FEATEVAL.
+
+    Example:
+    a = gendat()
+    w = featselb(a, (4,ldc()))
+    """
+    if not isinstance(task,str):
+        out = prmapping(featselb, task, x)
+        return out
+    if (task=='init'):
+        # just return the name, and hyperparameters
+        if isinstance(x,int):
+            x = [x, ldc()]
+        if x is None:
+            x = [numpy.inf,ldc()]
+        return 'Sequential Backward Feature Selector', x
+    elif (task=='train'):
+        # we are going to train the mapping
+        K = w[0] # number of features to retain
+        # the choosen features:
+        J = list(range(x.shape[1]))
+        n = 0
+        while (len(J)>K):
+            # choose the k'th feature:
+            # select from the candidates:
+            perf = -numpy.ones((x.shape[1]))
+            for j in J:
+                newJ = copy.deepcopy(J) #AIAI Caramba!
+                newJ.remove(j)
+                perf[j] = feateval(x[:,newJ],w[1])
+            # select the best one:
+            Jrem = numpy.argmax(perf)
+            n += 1
+            #print('The %d-th feature to remove is feature %d.'%(n,Jrem)) 
+            # update our variables
+            J.remove(Jrem)
+
+        # done, we found our K features
+        featlab = [x.featlab[j] for j in J]
+        return J,featlab
+    elif (task=='eval'):
+        # we are applying to new data
+        return x[:,w.data]
+    else:
+        raise ValueError("Task '%s' is *not* defined for feature selection."%task)
+
+
 
