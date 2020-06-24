@@ -1828,9 +1828,14 @@ def hclust(D, ctype, K=None):
     Example:
     a = gendat()
     D = a*proxm(a,('city'))   # use city-block distance
-    lab = hclust(D, 'single', 3)
     dendro = hclust(D, 'single')
     plotdg(dendro)
+
+    Or:
+    a = gendat()
+    D = a*proxm(a,('eucl'))
+    lab = hclust(D, 'single', 3)
+    scatterd(prdataset(+a,lab))
     """
     
     # some input checking:
