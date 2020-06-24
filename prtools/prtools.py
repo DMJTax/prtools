@@ -28,6 +28,7 @@ A (small) subset of the methods are:
     kmeans    K-Means clustering
     hclust    Hierarchical Clustering clustering
     plotdg    Plot dendrogram
+    dbi       Davies-Bouldin index
 
     labeld    labeling objects
     testc     test classifier
@@ -56,8 +57,6 @@ A (small) subset of datasets:
 """
 
 from prtools import *
-from sklearn.cluster import KMeans
-from sklearn.metrics import davies_bouldin_score
 from sklearn import svm
 from sklearn import linear_model
 from sklearn import tree
@@ -1877,6 +1876,7 @@ def hclust(D, ctype, K=None):
         if (ctype=='single'):
             newD = numpy.min(D[ind,:],axis=0)
         elif (ctype=='complete'):
+            # use 'masked_invalid' to ignore the infinities on the diag
             newD = numpy.max(numpy.ma.masked_invalid(D[ind,:]),axis=0)
         dendr[k,0] = ind[0]
         dendr[k,1] = ind[1]
@@ -2212,18 +2212,43 @@ def dbi(a, lab):
 
                e = dbi(A, Y)
 
-        Computes the Davies-Bouldin score for features A
-        and clustering labels Y.
+        Computes the Davies-Bouldin score for features A and clustering
+        labels Y.
+        The outcomes differ from the sklearn implementation, because
+        that one is wrong (switched the order of 'mean' and 'sqrt'). 
 
         Example:
         a = gendat()
-        y = kmeans(a, (3, 150, 'random'))
-        e = dbi(a, y)
+        lab = prkmeans(+a, (3, 150, 'random'))
+        e = dbi(+a, lab)
     """
-    with numpy.errstate(divide='ignore', invalid='ignore'):  # ignore division by zero warnings and invalid values
-        e = davies_bouldin_score(+a, numpy.ravel(lab))
-        print('Davies-Bouldin Index:', e)
-        return e
+    x = prdataset(a,lab)
+    # initialise variables:
+    c = x.nrclasses()
+    mn = numpy.zeros((c,x.shape[1]))
+    sd = numpy.zeros((c,1))
+    R = numpy.zeros((c,c))
+
+    # estimate the means and average distances to cluster centers:
+    for i in range(c):
+        xi = seldat(x,i)
+        mi = numpy.mean(+xi,axis=0,keepdims=True)
+        mn[i,:] = mi
+        di = sqeucldist(+xi,mi)
+        sd[i] = numpy.sqrt(numpy.mean(di))
+        # This (*wrong*) version is defined in sklearn: 
+        #sd[i] = numpy.mean(numpy.sqrt(di))
+
+    # construct the R matrix:
+    for i in range(c):
+        R[:,i:(i+1)] = sd[i]+sd
+    D =  sqeucldist(mn,mn) + 1e-15 # avoid division by 0
+    R /= numpy.sqrt(D)
+    numpy.fill_diagonal(R,-numpy.inf) # make sure the diagonal is ignored
+    # so now you can use 'masked_invalid':
+    R = numpy.mean(numpy.max(numpy.ma.masked_invalid(R),axis=1))
+
+    return R
 
 
 def icam(task=None, x=None, w=None):
