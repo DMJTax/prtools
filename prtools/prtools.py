@@ -27,6 +27,7 @@ A (small) subset of the methods are:
 
     kmeans    K-Means clustering
     hclust    Hierarchical Clustering clustering
+    plotdg    Plot dendrogram
 
     labeld    labeling objects
     testc     test classifier
@@ -55,7 +56,7 @@ A (small) subset of datasets:
 """
 
 from prtools import *
-from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.cluster import KMeans
 from sklearn.metrics import davies_bouldin_score, accuracy_score
 from sklearn import svm
 from sklearn import linear_model
@@ -1826,12 +1827,16 @@ def hclust(D, ctype, K=None):
                 the two sets  (DXD: Sorry, not implemented yet!)
     Example:
     a = gendat()
-    D = sqeucldist(a,a)
+    D = a*proxm(a,('city'))   # use city-block distance
     lab = hclust(D, 'single', 3)
     dendro = hclust(D, 'single')
     plotdg(dendro)
     """
     
+    # some input checking:
+    D = +D # no prdataset is needed
+    if (D.shape[0] != D.shape[1]):
+        raise ValueError('Hclust expects a square distance matrix.')
     # distances to itself do not count:
     N = D.shape[0]
     for i in range(N):
