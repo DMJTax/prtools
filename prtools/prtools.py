@@ -41,10 +41,10 @@ A (small) subset of the methods are:
     pcam      PCA
     fisherm   Fisher mapping
     
+    feateval  feature evaluation
     featseli  individual feature selection
     featsetf  sequential forward feature selection
     featselb  sequential backward feature selection
-    feateval  feature evaluation
 
 A (small) subset of datasets:
     gendatb   banana-shaped dataset
@@ -57,12 +57,12 @@ A (small) subset of datasets:
 
 from prtools import *
 from sklearn.cluster import KMeans
-from sklearn.metrics import davies_bouldin_score, accuracy_score
+from sklearn.metrics import davies_bouldin_score
 from sklearn import svm
 from sklearn import linear_model
 from sklearn import tree
 
-from sklearn.decomposition import PCA, FastICA
+from sklearn.decomposition import FastICA
 from sklearn.manifold import LocallyLinearEmbedding, Isomap
 
 import sys
@@ -2164,55 +2164,46 @@ def boomerangs(n=100):
     a.prior = p
     return a
 
-def kmeans(task=None, x=None, w=None):
+def prkmeans(a,K,maxiter=100):
     """
     K-Means clustering
 
-           w = kmeans(A, (K, MAXIT, INIT))
+           w = prkmeans(A, K, MAXIT)
 
     Train the K-Means clustering algorithm on dataset A, using K clusters,
-    with maximum number of iterations MAXIT and INIT initialization method.
-
-    The following initializations methods INIT are defined:
-    'k-means++'    selects initial cluster centers for k-mean clustering in a smart way to speed up convergence (default)
-    'random'       take at random K objects as initial means
+    with maximum number of iterations MAXIT.
 
     Example:
     a = gendat()
-    lab = kmeans(a, (3, 150, 'random'))
+    lab = kmeans(a, 3, 100)
     """
-    if not isinstance(task,str):
-        out = prmapping(kmeans,x)
-        out.mapping_type = "trained"
-        if task is not None:
-            out = out(task)
-        return out
-    if (task=='init'):
-        # just return the name, and hyperparameters
-        if x is None:
-            k = 8
-            maxit = 300
-            init_centers = 'k-means++'
-        else:
-            k = x[0]
-            maxit = x[1]
-            init_centers = x[2]
-        cluster = KMeans(n_clusters=k, max_iter=maxit, init=init_centers)
-        return 'K-Means clustering', cluster
-    elif (task=='train'):
-        # this mapping cannot be trained, so return nothing
-        return None,0
-    elif (task=='eval'):
-        # we are applying to new data
-        cluster = w.hyperparam
-        cluster.fit(+x)
-        pred = cluster.labels_
-        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
-            pred = pred[:,numpy.newaxis]
-        return pred
-    else:
-        print(task)
-        raise ValueError('This task is *not* defined for kmeans.')
+    # initialise the stuff:
+    N,dim = a.shape
+    a = +a
+    # DXD: we may want to improve the initialisation:
+    I = numpy.random.permutation(range(N))
+    means = a[I[:K],:]    # use the first K objects as starting means
+
+    # initial label assignment:
+    D = sqeucldist(a,means)
+    lab = numpy.argmin(D,axis=1)
+    # start the iterations:
+    oldlab = copy.deepcopy(lab)
+    oldlab[0] = -1 # make sure that the new labels are different:
+    iter = 0
+    while any(lab != oldlab) and (iter<maxiter):
+        # next iteration:
+        iter += 1
+        oldlab = lab
+        # recalculate the means:
+        for k in range(K):
+            I = (lab==k).nonzero()[0]  # this Python is making life a hell
+            means[k,:] = numpy.mean(a[I,:],axis=0,keepdims=True)
+        # recalculate the assignments:
+        D = sqeucldist(a,means)
+        lab = numpy.argmin(D,axis=1)
+        
+    return lab
 
 
 def dbi(a, lab):
@@ -2310,7 +2301,7 @@ def fisherm(task=None, x=None, w=None):
         mn = numpy.zeros((c,dim))
         cv = numpy.zeros((dim,dim))
         for i in range(c):
-            xi = +pr.seldat(x,i)
+            xi = seldat(x,i)
             mn[i,:] = numpy.mean(xi,axis=0)
             cv += numpy.cov(xi,rowvar=False)
         # get largest eigenvectors of S_W^-1 S_B:
