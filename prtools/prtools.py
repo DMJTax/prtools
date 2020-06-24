@@ -38,6 +38,7 @@ A (small) subset of the methods are:
     proxm     proximity mapping
 
     pcam      PCA
+    fisherm   Fisher mapping
     
     featseli  individual feature selection
     featsetf  sequential forward feature selection
@@ -1805,57 +1806,145 @@ def testr(task=None,x=None,w=None):
     else:
         raise ValueError("Task '%s' is *not* defined for testc."%task)
 
-def hclust(task=None, x=None, w=None):
+def hclust(D, ctype, K=None):
     """
     Hierarchical Clustering clustering
 
-           w = hclust(A, (K, TYPE))
+           w = hclust(D, TYPE, K)
 
-    Train the Hierarchical clustering algorithm on dataset A,
-    using K clusters and TYPE clustering criterion.
+    Train the Hierarchical clustering algorithm on distance matrix D,
+    using K clusters and TYPE clustering criterion. 
+    When K is defined, then the list of cluster labels is returned.
+    When K is not given, the full dendrogram is returned.
 
     The following clustering criteria TYPE are defined:
-    'single'    uses the minimum of the distances between all observations of the two sets (default)
-    'complete'  uses the maximum distances between all observations of the two sets
-    'average'   uses the average of the distances of each observation of the two sets
+    'single'    uses the minimum of the distances between all
+                observations of the two sets (default)
+    'complete'  uses the maximum distances between all observations of
+                the two sets
+    'average'   uses the average of the distances of each observation of
+                the two sets  (DXD: Sorry, not implemented yet!)
+    Example:
+    a = gendat()
+    D = sqeucldist(a,a)
+    lab = hclust(D, 'single', 3)
+    dendro = hclust(D, 'single')
+    plotdg(dendro)
+    """
+    
+    # distances to itself do not count:
+    N = D.shape[0]
+    for i in range(N):
+        D[i,i] = numpy.inf
+    # start with each point a cluster
+    I = [[i] for i in range(N)]
+    # how many clusters? or the full dendrogram?
+    if K is None:
+        K = 0
+    else:
+        lab = numpy.zeros((N,1))
+    dendr = numpy.ndarray((N-1,3))
+
+    # flatten the dendrogram:
+    def deepflatten(I):
+        for i in I:
+            if isinstance(i,list):
+                yield from deepflatten(i)
+            else:
+                yield i
+
+    # start clustering, and store the fusion levels:
+    for k in range(N-1):
+
+        # first, when the correct nr of clusters is found, store the cluster
+        # indices:
+        if (k==N-K):
+            for i in range(K):
+                J = list(deepflatten(I[i]))
+                lab[J]=i
+        # find the closest clusters
+        ind = numpy.unravel_index(numpy.argmin(D, axis=None), D.shape)
+        if (ctype=='single'):
+            newD = numpy.min(D[ind,:],axis=0)
+        elif (ctype=='complete'):
+            newD = numpy.max(numpy.ma.masked_invalid(D[ind,:]),axis=0)
+        dendr[k,0] = ind[0]
+        dendr[k,1] = ind[1]
+        dendr[k,2] = D[ind[0],ind[1]]
+        #print('Merge cluster %d and %d at level %f.'%(ind[0],ind[1],dendr[k,2]))
+
+        # merge the clusters
+        # replace the distances
+        D[ind[0]:(ind[0]+1),:] = newD
+        D[:,ind[0]:(ind[0]+1)] = newD[:,numpy.newaxis]
+        D[ind[0],ind[0]] = numpy.inf
+        D = numpy.delete(D,ind[1],0)
+        D = numpy.delete(D,ind[1],1)
+        # update the cluster indices
+        I[ind[0]].extend(I[ind[1]])
+        I.pop(ind[1])
+
+    if (K==0):
+        return dendr
+    else:
+        return lab
+
+def plotdg(dendr):
+    """
+    Plot dendrogram
+
+          plotdg(DENDR)
+
+    Plot dendrogram DENDR, as it is generated from hclust.
 
     Example:
     a = gendat()
-    w = hclust(a, (2, 'average'))
+    D = sqeucldist(a,a)
+    lab = hclust(D, 'single', 3)
+    dendro = hclust(D, 'single')
+    plotdg(dendro)
     """
-    if not isinstance(task,str):
-        out = prmapping(hclust,x)
-        out.mapping_type = "trained"
-        if task is not None:
-            out = out(task)
-        return out
-    if (task=='init'):
-        # just return the name, and hyperparameters
-        print('init :::')
-        if x is None:
-            k = 2
-            link = 'single'
-        else:
-            k = x[0]
-            link = x[1]
-        cluster = AgglomerativeClustering(n_clusters=k, linkage=link)
-        return 'Hierarchical clustering', cluster
-    elif (task=='train'):
-        # this mapping cannot be trained so return nothing.
-        return None,0
-    elif (task=='eval'):
-        # we are applying to new data
-        cluster = w.hyperparam
-        cluster.fit(+x)
-        pred = cluster.labels_
-        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
-            pred = pred[:,numpy.newaxis]
-        return pred
-    else:
-        print(task)
-        raise ValueError('This task is *not* defined for hierarchical clustering.')
+    N = dendr.shape[0]+1
+    # flatten the dendrogram:
+    def deepflatten(I):
+        for i in I:
+            if isinstance(i,list):
+                yield from deepflatten(i)
+            else:
+                yield i
+    # find the elements at each level:
+    I = [[i] for i in range(N)]
+    for k in range(N-1):
+        ind0 = int(dendr[k,0])
+        ind1 = int(dendr[k,1])
+        # update the cluster indices
+        I[ind0] = [I[ind0],I[ind1]]
+        I.pop(ind1)
+    # find the sequence of original objects for plotting:
+    flatI = list(deepflatten(I))
+    x = numpy.zeros(N)
+    y = numpy.zeros(N)
+    for i in range(N):
+        x[flatI[i]] = i
 
-    
+    # plot:
+    for k in range(N-1):
+        ind0 = int(dendr[k,0])
+        ind1 = int(dendr[k,1])
+        H = dendr[k,2]
+        plt.plot([x[ind0],x[ind0],x[ind1],x[ind1]],\
+                [y[ind0],H,H,y[ind1]],\
+                'b')
+        x[ind0] = (x[ind0]+x[ind1])/2
+        y[ind0] = H
+        x = numpy.delete(x,ind1)
+        y = numpy.delete(y,ind1)
+    # give the object IDs on the x-axis
+    plt.xticks(range(N),flatI)
+    plt.xlabel('Object nr.')
+    plt.ylabel('Fusion level')
+
+
 def gendats(n,dim=2,delta=2.):
     """
     Generation of a simple classification data.
@@ -2146,7 +2235,7 @@ def icam(task=None, x=None, w=None):
 
     Example:
     a = read_mat("cigars")
-    w = pcam(a, 1)
+    w = icam(a, 1)
     b = a*w
     """
 
@@ -2332,10 +2421,12 @@ def feateval(task=None,x=None,w=None):
     Evaluation of features by the criterion CRIT, using objects in the
     dataset A.  The larger J, the better. Resulting J-values are
     incomparable over the various methods.
-    crit='1NN'     Leave-one-out 1-nearest neighbor performance
-    crit='in-in'   inter-intra distances
-    crit='eucl-s'  sum of (squared) euclidean distances between class means
-    crit='eucl-m'  minimum of (squared) euclidean distances between class means
+       crit='1NN'     Leave-one-out 1-nearest neighbor performance
+       crit='in-in'   inter-intra distances
+       crit='eucl-s'  sum of (squared) euclidean distances between class
+                      means
+       crit='eucl-m'  minimum of (squared) euclidean distances between
+                      class means
 
     When the criterion is an untrained classifier, the apparent error is
     used. One can also request the K-fold cross-validation error using:
