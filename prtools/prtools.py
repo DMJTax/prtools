@@ -61,7 +61,6 @@ from sklearn import svm
 from sklearn import linear_model
 from sklearn import tree
 
-from sklearn.decomposition import FastICA
 from sklearn.manifold import LocallyLinearEmbedding, Isomap
 
 import sys
@@ -1404,7 +1403,6 @@ def pcam(task=None,x=None,w=None):
         else:
             pcadim = w
         # get eigenvalues and eigenvectors
-        print(x)
         C = numpy.cov(+x,rowvar=False)
         l,v = numpy.linalg.eig(C)
         # sort it:
@@ -2257,7 +2255,10 @@ def icam(task=None, x=None, w=None):
 
     W = icam(A, N)
 
-    Performs independent component analysis (ICA) on dataset A, keeping N (by default 1) dimensions.
+    Performs independent component analysis (ICA) on dataset A, keeping
+    N (by default 1) dimensions. The implementation is the FastICA from 
+    https://en.wikipedia.org/wiki/FastICA, where non-gaussian components
+    are found.
 
     Example:
     a = read_mat("cigars")
@@ -2271,26 +2272,48 @@ def icam(task=None, x=None, w=None):
     if task == 'init':
         # just return the name, and hyperparameters
         if x is None:
-            n = 1
-        else:
-            n = x
-        ica = FastICA(n_components=n)
-        return 'Independent Component Analysis', ica
+            x = 1
+        return 'Independent Component Analysis', x
 
     elif task == 'train':
         # we are going to train the mapping
-        X = +x
-        ica = copy.deepcopy(w)
-        ica.fit(X)
-        return ica, range(ica.components_.shape[0])
+        K = w
+        # perform fast ica:
+        N,dim = x.shape
+        w = numpy.random.random_sample((K,dim))
+        g = numpy.tanh
+        def gprime(x):
+            return 1 - numpy.tanh(x)**2
+
+        # pre-whiten the data:
+        u = pcam()*scalem()
+        w_p = x*u
+        a = x*w_p
+        X = (+x).transpose()
+
+        # go
+        for k in range(K):
+            # update component k:
+            for i in range(10): # DXD: need a better convergence criterion
+                wX = w[k,:].dot(X)
+                w[k,:] = X.dot(g(wX).transpose())/N \
+                        - gprime(wX).dot(numpy.ones((N,1))*w[k,:].transpose())/N
+                if (k>0):
+                    dw = w[k,:].dot(w[0,:].transpose())*w[0,:]
+                    for j in range(1,k):
+                        dw += w[k,:].dot(w[j,:].transpose())*w[j,:]
+                    w[k,:] -= dw
+                wnorm = numpy.sqrt(w[k,:].dot(w[k,:].transpose()))
+                w[k,:] /= wnorm
+        # return both the withening as the ICs
+        return (w_p,w.transpose()), range(K)
 
     elif task == 'eval':
         # we are applying to new data
-        ica = w.data
-        pred = ica.transform(+x)
-        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
-            pred = pred[:, numpy.newaxis]
-        return pred
+        w_p = w.data[0]
+        w_ica = w.data[1]
+        out = +(x*w_p)
+        return out.dot(w_ica)
     else:
         raise ValueError("Task '%s' is *not* defined for icam."%task)
 
