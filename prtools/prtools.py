@@ -39,7 +39,8 @@ A (small) subset of the methods are:
     scalem    scale mapping 
     proxm     proximity mapping
 
-    pcam      PCA
+    pcam      principal component analysis
+    icam      independent component analysis
     fisherm   Fisher mapping
     
     feateval  feature evaluation
