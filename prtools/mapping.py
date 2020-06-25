@@ -71,8 +71,8 @@ class prmapping(object):
         self.mapping_func = mapping_func
         self.mapping_type = 'untrained'
         self.name, self.hyperparam = self.mapping_func('init',hyperp)
-        self.data = () 
-        self.targets = ()
+        self.data = ()    # all trained parameters and settings
+        self.targets = () # feature names of the outputted prdataset
         self.shape = [0,0]
         self.user = []
         if isinstance(x,prdataset):
@@ -344,10 +344,12 @@ def parallelm(task=None,x=None,w=None):
         u = copy.deepcopy(w)  # I hate Python..
         allshapeout = 0
         alltargets = numpy.ndarray((0,))
-        for i in range(len(u)):
+        for i in range(len(w)):
+            wi = copy.deepcopy(w[i])  # I deeply hate Python..
             x1 = copy.deepcopy(x) # Did I say that I hate Python??
-            if (u[i].mapping_type=='untrained'):
-                u[i] = u[i].train(x1)
+            if (wi.mapping_type=='untrained'):
+                #print('train mapping %d...'%i)
+                u[i] = wi.train(x1)
             # output size:
             allshapeout += u[i].shape[1]
             # collect the targets:
@@ -408,6 +410,7 @@ def fixedcc(task=None,x=None,w=None):
         return None,()
     elif (task=='eval'):
         # we are classifying new data
+        #print(+x)
         # we need a dataset for the feature labels
         outputdataset = True
         if not isinstance(x,prdataset):
@@ -436,7 +439,7 @@ def fixedcc(task=None,x=None,w=None):
             elif (w.hyperparam[0]=='pow'):
                 # powered combination:
                 out[:,i:(i+1)] = numpy.power( \
-                        numpy.sum((+xi)**w.hyperparam[1],axis=1,keepdims=True),\
+                        numpy.mean((+xi)**w.hyperparam[1],axis=1,keepdims=True),\
                         1/w.hyperparam[1])
             else:
                 raise ValueError("Combining '%s' is *not* defined for\
@@ -493,7 +496,8 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
         otherout[:,i] = -numpy.inf
         z = out[:,i] - numpy.amax(otherout,axis=1)
         z.shape = (gridsize,gridsize)
-        plt.contour(x,y,z,levels,colors=colors)
+        CS = plt.contour(x,y,z,levels,colors=colors)
+    CS.collections[0].set_label(f.name)
 
 def plotm(f,nrlevels=10,colors=None,gridsize = 30):
     """
@@ -538,7 +542,8 @@ def plotm(f,nrlevels=10,colors=None,gridsize = 30):
         z = out[:,i]
         levels = numpy.linspace(numpy.min(z),numpy.max(z),nrlevels)
         z.shape = (gridsize,gridsize)
-        plt.contour(x,y,z,levels,colors=colors)
+        CS = plt.contour(x,y,z,levels,colors=colors)
+    CS.collections[0].set_label(f.name)
 
 def plotr(f,color=None,gridsize=100):
     """

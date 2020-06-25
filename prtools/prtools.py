@@ -27,6 +27,8 @@ A (small) subset of the methods are:
 
     kmeans    K-Means clustering
     hclust    Hierarchical Clustering clustering
+    plotdg    Plot dendrogram
+    dbi       Davies-Bouldin index
 
     labeld    labeling objects
     testc     test classifier
@@ -38,7 +40,13 @@ A (small) subset of the methods are:
     proxm     proximity mapping
 
     pcam      PCA
+    fisherm   Fisher mapping
     
+    feateval  feature evaluation
+    featseli  individual feature selection
+    featsetf  sequential forward feature selection
+    featselb  sequential backward feature selection
+
 A (small) subset of datasets:
     gendatb   banana-shaped dataset
     gendats   simple dataset
@@ -49,20 +57,12 @@ A (small) subset of datasets:
 """
 
 from prtools import *
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.cluster import KMeans, AgglomerativeClustering
-from sklearn.neighbors import KNeighborsClassifier, DistanceMetric
-from sklearn.model_selection import StratifiedKFold, LeaveOneOut
-from sklearn.metrics import davies_bouldin_score, accuracy_score
 from sklearn import svm
 from sklearn import linear_model
 from sklearn import tree
 
-from sklearn.decomposition import PCA, FastICA
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.manifold import LocallyLinearEmbedding, Isomap
 
-from mlxtend.feature_selection import SequentialFeatureSelector
 import sys
 
 
@@ -1403,7 +1403,6 @@ def pcam(task=None,x=None,w=None):
         else:
             pcadim = w
         # get eigenvalues and eigenvectors
-        print(x)
         C = numpy.cov(+x,rowvar=False)
         l,v = numpy.linalg.eig(C)
         # sort it:
@@ -1805,57 +1804,155 @@ def testr(task=None,x=None,w=None):
     else:
         raise ValueError("Task '%s' is *not* defined for testc."%task)
 
-def hclust(task=None, x=None, w=None):
+def hclust(D, ctype, K=None):
     """
     Hierarchical Clustering clustering
 
-           w = hclust(A, (K, TYPE))
+           w = hclust(D, TYPE, K)
 
-    Train the Hierarchical clustering algorithm on dataset A,
-    using K clusters and TYPE clustering criterion.
+    Train the Hierarchical clustering algorithm on distance matrix D,
+    using K clusters and TYPE clustering criterion. 
+    When K is defined, then the list of cluster labels is returned.
+    When K is not given, the full dendrogram is returned.
 
     The following clustering criteria TYPE are defined:
-    'single'    uses the minimum of the distances between all observations of the two sets (default)
-    'complete'  uses the maximum distances between all observations of the two sets
-    'average'   uses the average of the distances of each observation of the two sets
+    'single'    uses the minimum of the distances between all
+                observations of the two sets (default)
+    'complete'  uses the maximum distances between all observations of
+                the two sets
+    'average'   uses the average of the distances of each observation of
+                the two sets  (DXD: Sorry, not implemented yet!)
+    Example:
+    a = gendat()
+    D = a*proxm(a,('city'))   # use city-block distance
+    dendro = hclust(D, 'single')
+    plotdg(dendro)
+
+    Or:
+    a = gendat()
+    D = a*proxm(a,('eucl'))
+    lab = hclust(D, 'single', 3)
+    scatterd(prdataset(+a,lab))
+    """
+    
+    # some input checking:
+    D = +D # no prdataset is needed
+    if (D.shape[0] != D.shape[1]):
+        raise ValueError('Hclust expects a square distance matrix.')
+    # distances to itself do not count:
+    N = D.shape[0]
+    for i in range(N):
+        D[i,i] = numpy.inf
+    # start with each point a cluster
+    I = [[i] for i in range(N)]
+    # how many clusters? or the full dendrogram?
+    if K is None:
+        K = 0
+    else:
+        lab = numpy.zeros((N,1))
+    dendr = numpy.ndarray((N-1,3))
+
+    # flatten the dendrogram:
+    def deepflatten(I):
+        for i in I:
+            if isinstance(i,list):
+                yield from deepflatten(i)
+            else:
+                yield i
+
+    # start clustering, and store the fusion levels:
+    for k in range(N-1):
+
+        # first, when the correct nr of clusters is found, store the cluster
+        # indices:
+        if (k==N-K):
+            for i in range(K):
+                J = list(deepflatten(I[i]))
+                lab[J]=i
+        # find the closest clusters
+        ind = numpy.unravel_index(numpy.argmin(D, axis=None), D.shape)
+        if (ctype=='single'):
+            newD = numpy.min(D[ind,:],axis=0)
+        elif (ctype=='complete'):
+            # use 'masked_invalid' to ignore the infinities on the diag
+            newD = numpy.max(numpy.ma.masked_invalid(D[ind,:]),axis=0)
+        dendr[k,0] = ind[0]
+        dendr[k,1] = ind[1]
+        dendr[k,2] = D[ind[0],ind[1]]
+        #print('Merge cluster %d and %d at level %f.'%(ind[0],ind[1],dendr[k,2]))
+
+        # merge the clusters
+        # replace the distances
+        D[ind[0]:(ind[0]+1),:] = newD
+        D[:,ind[0]:(ind[0]+1)] = newD[:,numpy.newaxis]
+        D[ind[0],ind[0]] = numpy.inf
+        D = numpy.delete(D,ind[1],0)
+        D = numpy.delete(D,ind[1],1)
+        # update the cluster indices
+        I[ind[0]].extend(I[ind[1]])
+        I.pop(ind[1])
+
+    if (K==0):
+        return dendr
+    else:
+        return lab
+
+def plotdg(dendr):
+    """
+    Plot dendrogram
+
+          plotdg(DENDR)
+
+    Plot dendrogram DENDR, as it is generated from hclust.
 
     Example:
     a = gendat()
-    w = hclust(a, (2, 'average'))
+    D = sqeucldist(a,a)
+    lab = hclust(D, 'single', 3)
+    dendro = hclust(D, 'single')
+    plotdg(dendro)
     """
-    if not isinstance(task,str):
-        out = prmapping(hclust,x)
-        out.mapping_type = "trained"
-        if task is not None:
-            out = out(task)
-        return out
-    if (task=='init'):
-        # just return the name, and hyperparameters
-        print('init :::')
-        if x is None:
-            k = 2
-            link = 'single'
-        else:
-            k = x[0]
-            link = x[1]
-        cluster = AgglomerativeClustering(n_clusters=k, linkage=link)
-        return 'Hierarchical clustering', cluster
-    elif (task=='train'):
-        # this mapping cannot be trained so return nothing.
-        return None,0
-    elif (task=='eval'):
-        # we are applying to new data
-        cluster = w.hyperparam
-        cluster.fit(+x)
-        pred = cluster.labels_
-        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
-            pred = pred[:,numpy.newaxis]
-        return pred
-    else:
-        print(task)
-        raise ValueError('This task is *not* defined for hierarchical clustering.')
+    N = dendr.shape[0]+1
+    # flatten the dendrogram:
+    def deepflatten(I):
+        for i in I:
+            if isinstance(i,list):
+                yield from deepflatten(i)
+            else:
+                yield i
+    # find the elements at each level:
+    I = [[i] for i in range(N)]
+    for k in range(N-1):
+        ind0 = int(dendr[k,0])
+        ind1 = int(dendr[k,1])
+        # update the cluster indices
+        I[ind0] = [I[ind0],I[ind1]]
+        I.pop(ind1)
+    # find the sequence of original objects for plotting:
+    flatI = list(deepflatten(I))
+    x = numpy.zeros(N)
+    y = numpy.zeros(N)
+    for i in range(N):
+        x[flatI[i]] = i
 
-    
+    # plot:
+    for k in range(N-1):
+        ind0 = int(dendr[k,0])
+        ind1 = int(dendr[k,1])
+        H = dendr[k,2]
+        plt.plot([x[ind0],x[ind0],x[ind1],x[ind1]],\
+                [y[ind0],H,H,y[ind1]],\
+                'b')
+        x[ind0] = (x[ind0]+x[ind1])/2
+        y[ind0] = H
+        x = numpy.delete(x,ind1)
+        y = numpy.delete(y,ind1)
+    # give the object IDs on the x-axis
+    plt.xticks(range(N),flatI)
+    plt.xlabel('Object nr.')
+    plt.ylabel('Fusion level')
+
+
 def gendats(n,dim=2,delta=2.):
     """
     Generation of a simple classification data.
@@ -2065,55 +2162,46 @@ def boomerangs(n=100):
     a.prior = p
     return a
 
-def kmeans(task=None, x=None, w=None):
+def prkmeans(a,K,maxiter=100):
     """
     K-Means clustering
 
-           w = kmeans(A, (K, MAXIT, INIT))
+           w = prkmeans(A, K, MAXIT)
 
     Train the K-Means clustering algorithm on dataset A, using K clusters,
-    with maximum number of iterations MAXIT and INIT initialization method.
-
-    The following initializations methods INIT are defined:
-    'k-means++'    selects initial cluster centers for k-mean clustering in a smart way to speed up convergence (default)
-    'random'       take at random K objects as initial means
+    with maximum number of iterations MAXIT.
 
     Example:
     a = gendat()
-    lab = kmeans(a, (3, 150, 'random'))
+    lab = kmeans(a, 3, 100)
     """
-    if not isinstance(task,str):
-        out = prmapping(kmeans,x)
-        out.mapping_type = "trained"
-        if task is not None:
-            out = out(task)
-        return out
-    if (task=='init'):
-        # just return the name, and hyperparameters
-        if x is None:
-            k = 8
-            maxit = 300
-            init_centers = 'k-means++'
-        else:
-            k = x[0]
-            maxit = x[1]
-            init_centers = x[2]
-        cluster = KMeans(n_clusters=k, max_iter=maxit, init=init_centers)
-        return 'K-Means clustering', cluster
-    elif (task=='train'):
-        # this mapping cannot be trained, so return nothing
-        return None,0
-    elif (task=='eval'):
-        # we are applying to new data
-        cluster = w.hyperparam
-        cluster.fit(+x)
-        pred = cluster.labels_
-        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
-            pred = pred[:,numpy.newaxis]
-        return pred
-    else:
-        print(task)
-        raise ValueError('This task is *not* defined for kmeans.')
+    # initialise the stuff:
+    N,dim = a.shape
+    a = +a
+    # DXD: we may want to improve the initialisation:
+    I = numpy.random.permutation(range(N))
+    means = a[I[:K],:]    # use the first K objects as starting means
+
+    # initial label assignment:
+    D = sqeucldist(a,means)
+    lab = numpy.argmin(D,axis=1)
+    # start the iterations:
+    oldlab = copy.deepcopy(lab)
+    oldlab[0] = -1 # make sure that the new labels are different:
+    iter = 0
+    while any(lab != oldlab) and (iter<maxiter):
+        # next iteration:
+        iter += 1
+        oldlab = lab
+        # recalculate the means:
+        for k in range(K):
+            I = (lab==k).nonzero()[0]  # this Python is making life a hell
+            means[k,:] = numpy.mean(a[I,:],axis=0,keepdims=True)
+        # recalculate the assignments:
+        D = sqeucldist(a,means)
+        lab = numpy.argmin(D,axis=1)
+        
+    return lab
 
 
 def dbi(a, lab):
@@ -2122,18 +2210,43 @@ def dbi(a, lab):
 
                e = dbi(A, Y)
 
-        Computes the Davies-Bouldin score for features A
-        and clustering labels Y.
+        Computes the Davies-Bouldin score for features A and clustering
+        labels Y.
+        The outcomes differ from the sklearn implementation, because
+        that one is wrong (switched the order of 'mean' and 'sqrt'). 
 
         Example:
         a = gendat()
-        y = kmeans(a, (3, 150, 'random'))
-        e = dbi(a, y)
+        lab = prkmeans(+a, (3, 150, 'random'))
+        e = dbi(+a, lab)
     """
-    with numpy.errstate(divide='ignore', invalid='ignore'):  # ignore division by zero warnings and invalid values
-        e = davies_bouldin_score(+a, numpy.ravel(lab))
-        print('Davies-Bouldin Index:', e)
-        return e
+    x = prdataset(a,lab)
+    # initialise variables:
+    c = x.nrclasses()
+    mn = numpy.zeros((c,x.shape[1]))
+    sd = numpy.zeros((c,1))
+    R = numpy.zeros((c,c))
+
+    # estimate the means and average distances to cluster centers:
+    for i in range(c):
+        xi = seldat(x,i)
+        mi = numpy.mean(+xi,axis=0,keepdims=True)
+        mn[i,:] = mi
+        di = sqeucldist(+xi,mi)
+        sd[i] = numpy.sqrt(numpy.mean(di))
+        # This (*wrong*) version is defined in sklearn: 
+        #sd[i] = numpy.mean(numpy.sqrt(di))
+
+    # construct the R matrix:
+    for i in range(c):
+        R[:,i:(i+1)] = sd[i]+sd
+    D =  sqeucldist(mn,mn) + 1e-15 # avoid division by 0
+    R /= numpy.sqrt(D)
+    numpy.fill_diagonal(R,-numpy.inf) # make sure the diagonal is ignored
+    # so now you can use 'masked_invalid':
+    R = numpy.mean(numpy.max(numpy.ma.masked_invalid(R),axis=1))
+
+    return R
 
 
 def icam(task=None, x=None, w=None):
@@ -2142,11 +2255,14 @@ def icam(task=None, x=None, w=None):
 
     W = icam(A, N)
 
-    Performs independent component analysis (ICA) on dataset A, keeping N (by default 1) dimensions.
+    Performs independent component analysis (ICA) on dataset A, keeping
+    N (by default 1) dimensions. The implementation is the FastICA from 
+    https://en.wikipedia.org/wiki/FastICA, where non-gaussian components
+    are found.
 
     Example:
     a = read_mat("cigars")
-    w = pcam(a, 1)
+    w = icam(a, 1)
     b = a*w
     """
 
@@ -2156,26 +2272,48 @@ def icam(task=None, x=None, w=None):
     if task == 'init':
         # just return the name, and hyperparameters
         if x is None:
-            n = 1
-        else:
-            n = x
-        ica = FastICA(n_components=n)
-        return 'Independent Component Analysis', ica
+            x = 1
+        return 'Independent Component Analysis', x
 
     elif task == 'train':
         # we are going to train the mapping
-        X = +x
-        ica = copy.deepcopy(w)
-        ica.fit(X)
-        return ica, range(ica.components_.shape[0])
+        K = w
+        # perform fast ica:
+        N,dim = x.shape
+        w = numpy.random.random_sample((K,dim))
+        g = numpy.tanh
+        def gprime(x):
+            return 1 - numpy.tanh(x)**2
+
+        # pre-whiten the data:
+        u = pcam()*scalem()
+        w_p = x*u
+        a = x*w_p
+        X = (+x).transpose()
+
+        # go
+        for k in range(K):
+            # update component k:
+            for i in range(10): # DXD: need a better convergence criterion
+                wX = w[k,:].dot(X)
+                w[k,:] = X.dot(g(wX).transpose())/N \
+                        - gprime(wX).dot(numpy.ones((N,1))*w[k,:].transpose())/N
+                if (k>0):
+                    dw = w[k,:].dot(w[0,:].transpose())*w[0,:]
+                    for j in range(1,k):
+                        dw += w[k,:].dot(w[j,:].transpose())*w[j,:]
+                    w[k,:] -= dw
+                wnorm = numpy.sqrt(w[k,:].dot(w[k,:].transpose()))
+                w[k,:] /= wnorm
+        # return both the withening as the ICs
+        return (w_p,w.transpose()), range(K)
 
     elif task == 'eval':
         # we are applying to new data
-        ica = w.data
-        pred = ica.transform(+x)
-        if len(pred.shape) == 1: # oh boy oh boy, we are in trouble
-            pred = pred[:, numpy.newaxis]
-        return pred
+        w_p = w.data[0]
+        w_ica = w.data[1]
+        out = +(x*w_p)
+        return out.dot(w_ica)
     else:
         raise ValueError("Task '%s' is *not* defined for icam."%task)
 
@@ -2211,7 +2349,7 @@ def fisherm(task=None, x=None, w=None):
         mn = numpy.zeros((c,dim))
         cv = numpy.zeros((dim,dim))
         for i in range(c):
-            xi = +pr.seldat(x,i)
+            xi = seldat(x,i)
             mn[i,:] = numpy.mean(xi,axis=0)
             cv += numpy.cov(xi,rowvar=False)
         # get largest eigenvectors of S_W^-1 S_B:
@@ -2323,209 +2461,264 @@ def isomapm(task=None, x=None, w=None):
     else:
         raise ValueError("Task '%s' is *not* defined for isomap."%task)
 
-def featselb(task=None, x=None, w=None):
+def feateval(task=None,x=None,w=None):
     """
-    Trainable mapping for backward feature selection
+    Evaluation of a feature set
 
-           w = featselb(A, (CLF, K, N))
+          J = feateval(A,crit)
 
-    Backward selection of K features using the dataset A. CLF corresponds to the classifier that will be used
-    to evaluate the accuracy of the subsets. The number of cross-validation folds N has to be provided.
-    w.targets can be used to view the selected features.
+    Evaluation of features by the criterion CRIT, using objects in the
+    dataset A.  The larger J, the better. Resulting J-values are
+    incomparable over the various methods.
+       crit='1NN'     Leave-one-out 1-nearest neighbor performance
+       crit='in-in'   inter-intra distances
+       crit='eucl-s'  sum of (squared) euclidean distances between class
+                      means
+       crit='eucl-m'  minimum of (squared) euclidean distances between
+                      class means
 
-    The following classifiers CLF are defined:
-    '1NN'    1 Nearest Neightbour (default)
-    'LDA'    Linear Discriminant Analysis
+    When the criterion is an untrained classifier, the apparent error is
+    used. One can also request the K-fold cross-validation error using:
+    crit = ['crossval', ldc(), K]
 
     Example:
-    a = gendat()
-    w = featselb(a, ('1NN', 4, 10))
-    """
-    return featsel(task, (x[0], x[1], False, x[2]), w)
-
-def featself(task=None, x=None, w=None):
-    """
-    Trainable mapping for forward feature selection
-
-           w = featself(A, (CLF, K, N))
-
-    Forward selection of K features using the dataset A. CLF corresponds to the classifier that will be used
-    to evaluate the accuracy of the subsets. The number of cross-validation folds N has to be provided.
-    w.targets can be used to view the selected features.
-
-    The following classifiers CLF are defined:
-    '1NN'    1 Nearest Neightbour (default)
-    'LDA'    Linear Discriminant Analysis
-
-    Example:
-    a = gendat()
-    w = featself(a, ('1NN', 4, 10))
-    """
-    return featsel(task, (x[0], x[1], True, x[2]), w)
-
-def featsel(task=None, x=None, w=None):
-    """
-    Sequential Feature Selector
-
-           w = featsel(A, (CLF, K, FORWARD, N))
-
-    Selection of K features using the dataset A. CLF corresponds to the classifier that will be used
-    to evaluate the accuracy of the subsets. FORWARD can be set to True for forward feature selection
-    or False for backward feature selection. The number of cross-validation folds N has to be provided.
-
-    The following classifiers CLF are defined:
-    '1NN'    1 Nearest Neightbour (default)
-    'LDA'    Linear Discriminant Analysis
-
-    Example:
-    a = gendat()
-    w = featsel(a, ('1NN', 4, True, 10))
+    >> A = gendatb()
+    >> e = feateval(A,'in-in')
+    >> e = feateval(A,ldc())
+    >> e = feateval(A,['crossval',ldc(),10])
     """
     if not isinstance(task,str):
-        out = prmapping(featsel, task, x)
+        out = prmapping(feateval,x)
+        out.mapping_type = "trained"
+        if task is not None:
+            out = out(task)
         return out
     if (task=='init'):
-        # just return the name, and hyperparameters
+        # find out if we use a prespecified criterion, on a prmapping
         if x is None:
-            clf = '1NN'
-            features = 1
-            setting = False
-            folds = 10
-        else:
-            clf = x[0]
-            features = x[1]
-            setting = x[2]
-            folds = x[3]
-        if clf == '1NN':
-            clf = KNeighborsClassifier(n_neighbors=1)
-        if clf == 'LDA':
-            clf = LinearDiscriminantAnalysis()
-        sfs = SequentialFeatureSelector(clf, k_features=features, forward=setting, floating=False,
-                                        verbose=0, scoring='accuracy', cv=folds)
-        return 'Sequential Feature Selector', sfs
+            x = ldc()
+        if isinstance(x,prmapping):
+            x = ['app.err.', x]
+        if isinstance(x,tuple):
+            x = list(x)
+        # just return the name, and hyperparameters
+        return 'Feature evaluation', x
     elif (task=='train'):
-        # we are going to train the mapping
-        X = +x
-        y = x.targets
-        sfs = copy.deepcopy(w)
-        sfs = sfs.fit(X, y.ravel())
-        return sfs, sfs.k_feature_idx_
+        # nothing to train
+        return None,0
     elif (task=='eval'):
-        # we are applying to new data
-        sfs = w.data
-        pred = x[:, list(sfs.k_feature_idx_)]
-        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
-            pred = pred[:,numpy.newaxis]
-        return pred
+        # we are evaluating the features:
+        J = 0
+        if isinstance(w.hyperparam,list):
+            if (w.hyperparam[0]=='app.err.'):
+                # use the apparent error of the given classifier
+                classif = x*w.hyperparam[1]
+                J = numpy.mean(labeld(x*classif) != x.targets)*1.
+            elif (w.hyperparam[0]=='crossval'):
+                J = prcrossval(x,w.hyperparam[1],w.hyperparam[2])
+                J = numpy.mean(J)
+        elif (w.hyperparam=='1NN'):
+            # Leave-one-out 1-nearest neighbor
+            lab = a.nlab()
+            D = sqeucldist(+a,+a)
+            for i in range(a.shape[0]):
+                D[i,i] = numpy.inf
+            I = numpy.argmin(D,axis=0)
+            J = numpy.mean((lab == lab[I])*1.)
+        elif (w.hyperparam=='eucl-m'):
+            # minimum of (squared) euclidean distances between class means
+            c = x.nrclasses()
+            dim = x.shape[1]
+            mn = numpy.zeros((c,dim))
+            for i in range(c):
+                xi = seldat(x,i)
+                mn[i,:] = numpy.mean(+xi,axis=0)
+            D = sqeucldist(mn,mn)
+            for i in range(c):
+                D[i,i] = numpy.inf
+            J = numpy.min(D)
+        elif (w.hyperparam=='eucl-s'):
+            # sum of (squared) euclidean distances between class means
+            c = x.nrclasses()
+            dim = x.shape[1]
+            mn = numpy.zeros((c,dim))
+            for i in range(c):
+                xi = seldat(x,i)
+                mn[i,:] = numpy.mean(+xi,axis=0)
+            D = sqeucldist(mn,mn)
+            J = numpy.sum(D)/2.
+        elif (w.hyperparam=='in-in'):
+            # inter-intra distances
+            c = x.nrclasses()
+            dim = x.shape[1]
+            mn = numpy.zeros((c,dim))
+            cv = numpy.zeros((c,dim,dim))
+            for i in range(c):
+                xi = seldat(x,i)
+                mn[i,:] = numpy.mean(+xi,axis=0)
+                cv[i,:,:] = numpy.cov(+xi,rowvar=False)
+            S_b = numpy.cov(mn,rowvar=False)  # between scatter
+            S_w = numpy.mean(cv,axis=0) # within scatter
+            J = numpy.trace(numpy.linalg.pinv(S_w).dot(S_b))
+        return J
     else:
-        raise ValueError("Task '%s' is *not* defined for feature selection."%task)
+        raise ValueError("Task '%s' is *not* defined for feateval."%task)
 
 def featseli(task=None, x=None, w=None):
     """
-    Trainable mapping for individual feature selection
+    Individual Feature Selector
 
-     w = featseli(A, (CLF, K, N))
+           w = featseli(A, (K,CRIT))
 
-    Individual selection of K features using the dataset A. CLF corresponds to the classifier that will be used
-    to evaluate the accuracy achieved via each feature individually. The number of cross-validation folds N has
-    to be provided. w.targets can be used to view the selected features.
-
-    The following classifiers CLF are defined:
-    '1NN'    1 Nearest Neightbour (default)
-    'LDA'    Linear Discriminant Analysis
+    Individual feature selection of K features using the dataset A. The
+    criterion is defined by CRIT; for more information for possible
+    criteria, see FEATEVAL.
 
     Example:
     a = gendat()
-    w = featseli(a, ('1NN', 4, 10))
+    w = featseli(a, (4,ldc()))
     """
     if not isinstance(task,str):
         out = prmapping(featseli, task, x)
         return out
     if (task=='init'):
         # just return the name, and hyperparameters
+        if isinstance(x,int):
+            x = [x, ldc()]
         if x is None:
-            x[0] = '1NN'
-            x[1] = 1
-            x[2] = 10
+            x = [numpy.inf,ldc()]
         return 'Individual Feature Selector', x
     elif (task=='train'):
         # we are going to train the mapping
-        X = +x
-        y = x.targets
-        fs = copy.deepcopy(w)
-        if w[0] == '1NN':
-            clf = KNeighborsClassifier(n_neighbors=1)
-        if w[0] == 'LDA':
-            clf = LinearDiscriminantAnalysis()
-        skf = StratifiedKFold(n_splits=w[2])
-        feat_accuracy = []  # average classification accuracy per individual feature
-        # For every feature individually
-        for feat in range(X.shape[1]):
-            feat_accuracy_per_fold = []  # accuracy for specific feature per fold
-            # Perform k-fold cross validation
-            for train_index, test_index in skf.split(X, y):
-                # Stratified train-test splits
-                X_train, X_test = X[train_index, feat], X[test_index, feat]
-                y_train, y_test = y[train_index], y[test_index]
-                clf.fit(X_train.reshape(-1, 1), y_train.ravel())
-                y_pred = clf.predict(X_test.reshape(-1, 1))
-                feat_accuracy_per_fold.append(accuracy_score(y_test, y_pred))
-            feat_accuracy.append(numpy.mean(feat_accuracy_per_fold))
-        sorted_idx = numpy.argsort(feat_accuracy)  # list is sorted in ascending order, return K last elements
-        return fs, sorted_idx[-w[1]:]
+        K = w[0]
+        if (K>x.shape[1]):
+            K = x.shape[1] # we want all the features, ordered 
+        # the list of features to choose from:
+        I = list(range(x.shape[1]))
+        perf = numpy.zeros((x.shape[1]))
+        for i in I:
+            perf[i] = feateval(x[:,i:(i+1)] ,w[1])
+        # sort them:
+        J = numpy.argsort(-perf)
+        J = J[:K]
+        # done, we found our K features
+        featlab = [x.featlab[j] for j in J]
+        return J,featlab
     elif (task=='eval'):
         # we are applying to new data
-        pred = x[:, w.targets]
-        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
-            pred = pred[:,numpy.newaxis]
-        return pred
+        return x[:,w.data]
     else:
         raise ValueError("Task '%s' is *not* defined for feature selection."%task)
 
-def feateval(a, x=None):
+def featself(task=None, x=None, w=None):
     """
-    Evaluation of feature set for classification
+    Sequential Forward Feature Selector
 
-     J = feateval(A, CRIT)
+           w = featself(A, (K,CRIT))
 
-    Evaluation of features by the criterion CRIT, using objects in the dataset A.
-    The larger J, the better. Resulting J-values are incomparable over the various methods.
-
-    The following CRIT methods are defined:
-    '1NN'    1 Nearest Neightbou classification performance (default)
-    'eucl-s'    sum of squared Euclidean distances
-    'eucl-m'    minimum of squared Euclidean distances
+    Forward feature selection of K features using the dataset A. The
+    criterion is defined by CRIT; for more information for possible
+    criteria, see FEATEVAL.
 
     Example:
     a = gendat()
-    e = feateval(a, 'eucl-s')
+    w = featself(a, (4,ldc()))
     """
-    X = +a
-    y = a.targets
-    if x == '1NN':
-        clf = KNeighborsClassifier(n_neighbors=1)
-        loo = LeaveOneOut()
-        loo.get_n_splits(X)
-        accuracy_per_fold = []
-        # Leave-one-out for 1NN
-        for train_index, test_index in loo.split(X):
-            X_train, X_test = X[train_index], X[test_index]
-            y_train, y_test = y[train_index], y[test_index]
-            clf.fit(X_train, y_train.ravel())
-            y_pred = clf.predict(X_test)
-            accuracy_per_fold.append(accuracy_score(y_test, y_pred))
-        metric = numpy.mean(accuracy_per_fold)
-    elif x == 'eucl-s' or x == 'eucl-m':
-        U = []
-        unique_classes = numpy.unique(y)
-        for lab in unique_classes:
-            U.append(numpy.mean(X[numpy.where(y == lab)[0], :], axis=0))
-        dist = DistanceMetric.get_metric('euclidean')
-        D = numpy.power(dist.pairwise(U), 2)
-        if x == 'eucl-s':
-            metric = numpy.sum(D)/2
-        elif x == 'eucl-m':
-            D = D + sys.float_info.max * numpy.eye(len(unique_classes))
-            metric = numpy.min(D)
-    return metric
+    if not isinstance(task,str):
+        out = prmapping(featself, task, x)
+        return out
+    if (task=='init'):
+        # just return the name, and hyperparameters
+        if isinstance(x,int):
+            x = [x, ldc()]
+        if x is None:
+            x = [numpy.inf,ldc()]
+        return 'Sequential Forward Feature Selector', x
+    elif (task=='train'):
+        # we are going to train the mapping
+        K = w[0]
+        if (numpy.isinf(K)):
+            K = x.shape[1] # we want all the features, ordered 
+        # the list of features to choose from:
+        I = list(range(x.shape[1]))
+        x_prev = x[:,:0]
+        J = []    # the choosen features
+        for k in range(K):
+            # choose the k'th feature:
+            # select from the candidates:
+            perf = -numpy.ones((x.shape[1]))
+            for i in I:
+                x_new = x_prev.concatenate(x[:,i:(i+1)],axis=1)
+                perf[i] = feateval(x_new,w[1])
+            # select the best one:
+            Jadd = numpy.argmax(perf)
+            #print('The %d-th feature is feature %d.'%(k,Jadd)) 
+            # update our variables
+            J.append(Jadd)
+            I.remove(Jadd)
+            x_prev = x_prev.concatenate(x[:,Jadd:(Jadd+1)],axis=1)
+        # done, we found our K features
+        featlab = [x.featlab[j] for j in J]
+        return J,featlab
+    elif (task=='eval'):
+        # we are applying to new data
+        return x[:,w.data]
+    else:
+        raise ValueError("Task '%s' is *not* defined for feature selection."%task)
+
+def featselb(task=None, x=None, w=None):
+    """
+    Sequential Backward Feature Selector
+
+           w = featselb(A, (K,CRIT))
+
+    Backward feature selection of K features using the dataset A. The
+    criterion is defined by CRIT; for more information for possible
+    criteria, see FEATEVAL.
+
+    Example:
+    a = gendat()
+    w = featselb(a, (4,ldc()))
+    """
+    if not isinstance(task,str):
+        out = prmapping(featselb, task, x)
+        return out
+    if (task=='init'):
+        # just return the name, and hyperparameters
+        if isinstance(x,int):
+            x = [x, ldc()]
+        if x is None:
+            x = [numpy.inf,ldc()]
+        return 'Sequential Backward Feature Selector', x
+    elif (task=='train'):
+        # we are going to train the mapping
+        K = w[0] # number of features to retain
+        # the choosen features:
+        J = list(range(x.shape[1]))
+        n = 0
+        while (len(J)>K):
+            # choose the k'th feature:
+            # select from the candidates:
+            perf = -numpy.ones((x.shape[1]))
+            for j in J:
+                newJ = copy.deepcopy(J) #AIAI Caramba!
+                newJ.remove(j)
+                perf[j] = feateval(x[:,newJ],w[1])
+            # select the best one:
+            Jrem = numpy.argmax(perf)
+            n += 1
+            #print('The %d-th feature to remove is feature %d.'%(n,Jrem)) 
+            # update our variables
+            J.remove(Jrem)
+
+        # done, we found our K features
+        featlab = [x.featlab[j] for j in J]
+        return J,featlab
+    elif (task=='eval'):
+        # we are applying to new data
+        return x[:,w.data]
+    else:
+        raise ValueError("Task '%s' is *not* defined for feature selection."%task)
+
+
 
