@@ -64,8 +64,6 @@ from sklearn import tree
 
 from sklearn.manifold import LocallyLinearEmbedding, Isomap
 
-import sys
-
 
 # === mappings ===============================
 
