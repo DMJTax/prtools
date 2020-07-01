@@ -139,11 +139,6 @@ class prmapping(object):
             raise ValueError('The mapping is not trained and cannot be evaluated.')
         # not a good idea to supply the true targets?
         # but it is needed for testc!
-        #if isinstance(x,prdataset):
-        #    x_nolab = copy.deepcopy(x)
-        #    x_nolab.targets = ()
-        #    out = self.mapping_func("eval",x_nolab,self)
-        #else:
         newx = copy.deepcopy(x)
         out = self.mapping_func('eval',newx,self)
         if ((len(self.targets)>0) and (out.shape[1] != len(self.targets))):
@@ -151,18 +146,37 @@ class prmapping(object):
             print(self.targets)
             print(len(self.targets))
             raise ValueError('Output of mapping does not match number of targets.')
-        if (len(self.targets)>0):
-            if not isinstance(x,prdataset):
-                newx = prdataset(newx)
-            newx.featlab = self.targets
-        # tricky: if I don't input a prdataset, should I return one?
-        #  For parallelm I need a prdataset as output!
-        #if isinstance(x,prdataset) and (len(self.targets)>0):
-        if (len(self.targets)>0):
-            newx.setdata(+out)
-        else:
-            newx = out
-        return newx
+        #if (len(self.targets)>0):
+        #    if not isinstance(x,prdataset):
+        #        newx = prdataset(newx)
+        #    newx.featlab = self.targets
+        ## tricky: if I don't input a prdataset, should I return one?
+        ##  For parallelm I need a prdataset as output!
+        ##if isinstance(x,prdataset) and (len(self.targets)>0):
+        #if ((len(self.targets)>0) and (not isinstance(out,prdataset))):
+        #    newx.setdata(+out)
+        #else:
+        #    newx = out
+        #return newx
+
+        # Ok, that was a mess, again:
+        if (len(self.targets)>0):  # we output a prdataset
+            if (isinstance(out,prdataset)): # check if we can set featlab:
+                if (len(self.targets) != out.shape[1]):
+                    raise ValueError('Nr output features does not match nr of feature labels.')
+                out.featlab = self.targets
+                return out
+            else:   # convert to prdataset, keeping as much of the
+                # original dataset x as possible
+                if (isinstance(x,prdataset)):
+                    newx.setdata(+out)
+                else:
+                    newx = prdataset(out)
+                newx.featlab = self.targets
+                return newx
+        else:  # just return what the mapping did
+            return out
+
 
     def __call__(self,x):
         if (self.mapping_type=='untrained'):
