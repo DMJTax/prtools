@@ -336,7 +336,10 @@ def testc(task=None,x=None,w=None):
         return None,0
     elif (task=='eval'):
         # we are classifying new data
-        err = (labeld(x) != x.targets)*1.
+        truelab = x.targets
+        if (len(truelab.shape)<2): # robust against ill-shaped targets
+            truelab = truelab[:,numpy.newaxis]
+        err = (labeld(x) != truelab)*1.
         w = x.gettargets('weights')
         if w is not None:
             err *= w
@@ -1373,6 +1376,62 @@ def lassoc(task=None,x=None,w=None):
         return pred
     else:
         raise ValueError("Task '%s' is *not* defined for lassoc."%task)
+
+def winnowc(task=None,x=None,w=None):
+    """
+    Winnow classifier
+         w = winnowc(A,(BETA, NRITER))
+    """
+    if not isinstance(task,str):
+        out = pr.prmapping(winnowc,task,x)
+        return out
+    if (task=='init'):
+        # just return the name, and hyperparameters
+        if x is None:
+            # learning rate, nriterations
+            x = [0.01,100]
+        return 'Winnow', x
+    elif (task=='train'):
+        # we are going to train the mapping
+        # setup vars
+        beta,nriter = w
+        N,dim = x.shape
+        # define labels:
+        y = ispositive(x.targets)
+        if numpy.all(numpy.logical_not(y)):
+            raise ValueError("No positive objects found.")
+        y = 1 - 2.*y
+        #X = numpy.concatenate((+x,numpy.ones((N,1))),axis=1)
+        #W = numpy.ones((dim+1,1))
+        X = numpy.concatenate((+x,-(+x),numpy.ones((N,1))),axis=1)
+        W = numpy.ones((2*dim+1,1))
+
+        for i in range(nriter):
+            print("Iteration %d in Winnow" % i)
+            #randomly permute the data?
+            #I = numpy.random.permutation(numpy.arange(N))
+            #X = X[I,:]
+            # check each object if it is correctly classified
+            for j in range(N):
+                if (y[j]*X[j,:].dot(W)<0.):
+                    #print("error in obj %d."%j)
+                    W *= numpy.exp(beta*y[j]*X[j,numpy.newaxis].T)
+            #print(W)
+        
+        # store the parameters, and labels:
+        return W,x.lablist()
+    elif (task=='eval'):
+        # we are applying to new data
+        W = w.data
+        N = x.shape[0]
+        #X = numpy.concatenate((+x,numpy.ones((N,1))),axis=1)
+        X = numpy.concatenate((+x,-(+x),numpy.ones((N,1))),axis=1)
+        pred = X.dot(W)
+        out = numpy.hstack((pred,-pred))
+        return out
+    else:
+        raise ValueError("Task '%s' is *not* defined for winnowc."%task)
+
 
 def pcam(task=None,x=None,w=None):
     """
