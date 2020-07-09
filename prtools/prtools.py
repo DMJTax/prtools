@@ -1381,9 +1381,13 @@ def winnowc(task=None,x=None,w=None):
     """
     Winnow classifier
          w = winnowc(A,(BETA, NRITER))
+    Fit a Winnow classifier on dataset A. It is comparable to a
+    perceptron classifier, except the update is multiplicative instead
+    of additive. More suitable for high dimensional data where you want
+    to have a sparse solution. 
     """
     if not isinstance(task,str):
-        out = pr.prmapping(winnowc,task,x)
+        out = prmapping(winnowc,task,x)
         return out
     if (task=='init'):
         # just return the name, and hyperparameters
@@ -1397,7 +1401,8 @@ def winnowc(task=None,x=None,w=None):
         beta,nriter = w
         N,dim = x.shape
         # define labels:
-        y = ispositive(x.targets)
+        #y = ispositive(x.targets)
+        y = (x.targets==1)
         if numpy.all(numpy.logical_not(y)):
             raise ValueError("No positive objects found.")
         y = 1 - 2.*y
@@ -1407,7 +1412,7 @@ def winnowc(task=None,x=None,w=None):
         W = numpy.ones((2*dim+1,1))
 
         for i in range(nriter):
-            print("Iteration %d in Winnow" % i)
+            #print("Iteration %d in Winnow" % i)
             #randomly permute the data?
             #I = numpy.random.permutation(numpy.arange(N))
             #X = X[I,:]
@@ -1425,6 +1430,7 @@ def winnowc(task=None,x=None,w=None):
         W = w.data
         N = x.shape[0]
         #X = numpy.concatenate((+x,numpy.ones((N,1))),axis=1)
+        # of course, this is a bit inefficient, but for now it works:
         X = numpy.concatenate((+x,-(+x),numpy.ones((N,1))),axis=1)
         pred = X.dot(W)
         out = numpy.hstack((pred,-pred))
