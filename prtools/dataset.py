@@ -387,6 +387,10 @@ def genclass(n,p):
     return z
 
 def genlab(n,lab):
+    if (isinstance(n,int)):
+        n = [n]  # grrr Python...
+    if (isinstance(lab,str)):
+        lab = [lab]
     if (len(n)!=len(lab)):
         raise ValueError('Number of values in N should match number in lab')
     out = numpy.repeat(lab[0],n[0])
