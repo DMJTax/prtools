@@ -211,7 +211,19 @@ class prdataset(object):
         sz = self.classsizes()
         return sz/float(numpy.sum(sz))
 
-    def concatenate(self,other,axis=0):
+    def concatenate(self,other,axis=None):
+        # Concatenate dataset with something else
+        # If the axis is not given, try to infer from the sizes along
+        # which direction the concatenation should be performed. The
+        # first guess is along dimension 0:
+        if (axis is None):
+            if (self.shape[1]==other.shape[1]):
+                axis = 0
+            elif (self.shape[0]==other.shape[0]):
+                axis = 1
+            else:
+                raise ValueError('Datasets do not match size.')
+
         out = copy.deepcopy(self)
         if (axis==0):
             out = out.setdata(numpy.concatenate((out.data,other.data),axis=0))
