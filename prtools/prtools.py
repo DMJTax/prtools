@@ -1276,33 +1276,66 @@ def loglc(task=None,x=None,w=None):
     w = loglc(a,(0.))
     """
     if not isinstance(task,str):
-        out = prmapping(loglc,task,x)
-        return out
+        return prmapping(loglc,task,x)
     if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
-            C = numpy.inf
-        else:
-            C = 1./x
-        clf = linear_model.LogisticRegression(C=C,penalty='l2',tol=0.01,solver='saga')
-        return 'Logistic classifier', clf
+            x = [0]
+        if (isinstance(x,list) and (len(x)==0)):
+            x = [0]
+        if (isinstance(x,float)):
+            x = [x]
+        if (x[0]<0):
+            raise ValueError('loglc: Please use a non-negative value for LAMBDA.')
+        return 'Logistic classifier', x
     elif (task=='train'):
-        # we are going to train the mapping
-        X = +x
-        y = numpy.ravel(x.targets)
-        clf = copy.deepcopy(w)
-        clf.fit(X,y)
-        return clf,x.lablist()
+        
+        nrcl = x.nrclasses()
+        if (nrcl>2):
+            raise ValueError('For now, only two classes.')
+        # setup variables:
+        lamb = w[0]
+        eta = 0.001             # learning rate
+        min_rel_change = 1e-6   # minimal relative change in w
+        verysmall = 1e-12       # to avoid division by zero
+        N,dim = x.shape
+        # extend data with constant 1 to cope with bias:
+        X = numpy.concatenate((+x,numpy.ones((N,1))),axis=1)
+        y = (x.targets==1)*1. # we need to define 0/+1 labels
+        noty = 1-y
+        w = numpy.zeros((dim+1,1))
+
+        # perform gradient descent on loglikelihood:
+        LL = 4*N*numpy.log(2) # something larger than newLL:
+        newLL = 2*N*numpy.log(2) # something larger than N log(2)
+        #t = 0
+        #print('Iteration 0: LL = %f.'%newLL)
+        while ((LL-newLL)>min_rel_change*LL):
+            #t +=1
+            fx = 1./(1.+numpy.exp(-X.dot(w)))
+            # gradient:
+            dLLdw = numpy.sum(numpy.repeat((fx - y),dim+1,axis=1)*X,axis=0)
+            # keep track of the loglikelihood:
+            LL = newLL
+            newLL = -y.T.dot(numpy.log(fx + verysmall))\
+                    - noty.T.dot(numpy.log(1.-fx+verysmall))
+            #print('Iteration %d: newLL = %f.'%(t,newLL))
+            # weight update:
+            w -= eta*(dLLdw[:, numpy.newaxis] + 2.*lamb*w)
+
+        return w,x.lablist()
     elif (task=='eval'):
         # we are applying to new data
-        clf = w.data
-        pred = clf.decision_function(+x) 
-        if (len(pred.shape)==1): # oh boy oh boy, we are in trouble
-            pred = pred[:,numpy.newaxis]
-            pred = numpy.hstack((-pred,pred)) # sigh
-        return pred
+        W = w.data
+        # extend data with constant 1 to cope with bias:
+        X = numpy.concatenate((+x,numpy.ones((x.shape[0],1))),axis=1)
+        # the sigmoid:
+        out = 1./(1.+numpy.exp(-X.dot(W)))
+        return numpy.concatenate((1-out,out),axis=1)
     else:
         raise ValueError("Task '%s' is *not* defined for loglc."%task)
+
+
 
 def dectreec(task=None,x=None,w=None):
     "Decision tree classifier"
