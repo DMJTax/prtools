@@ -174,6 +174,10 @@ class prdataset(object):
 
     def __getitem__(self,key):
         newd = copy.deepcopy(self)
+        # be resistant to 'tuples' that come out of (..).nonzero()
+        if isinstance(key[0],tuple):
+            raise TypeError("Object indices should be a integer vector "\
+                    "(used all output\nfrom I=(..).nonzero()? Use only I[0]).")
         # be resistant to 'integer ndarray' indices:
         if isinstance(key[1],numpy.ndarray):
             key = (key[0], key[1].tolist())
@@ -289,8 +293,9 @@ class prdataset(object):
 
 
 # === useful functions =====================================
-def scatterd(a):
-    clrs = a.nlab().flatten()
+def scatterd(a,clrs=None):
+    if (clrs is None):
+        clrs = a.nlab().flatten()
     sz = a.data.shape
     if (sz[1]>1):
         plt.scatter(a.data[:,0],a.data[:,1],c=clrs)
