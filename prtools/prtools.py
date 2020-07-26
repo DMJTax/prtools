@@ -1295,7 +1295,7 @@ def loglc(task=None,x=None,w=None):
             raise ValueError('For now, only two classes.')
         # setup variables:
         lamb = w[0]
-        eta = 0.001             # learning rate
+        eta = 0.01             # learning rate
         min_rel_change = 1e-6   # minimal relative change in w
         verysmall = 1e-12       # to avoid division by zero
         N,dim = x.shape
@@ -1308,10 +1308,10 @@ def loglc(task=None,x=None,w=None):
         # perform gradient descent on loglikelihood:
         LL = 4*N*numpy.log(2) # something larger than newLL:
         newLL = 2*N*numpy.log(2) # something larger than N log(2)
-        #t = 0
+        t = 0
         #print('Iteration 0: LL = %f.'%newLL)
         while ((LL-newLL)>min_rel_change*LL):
-            #t +=1
+            t +=1
             fx = 1./(1.+numpy.exp(-X.dot(w)))
             # gradient:
             dLLdw = numpy.sum(numpy.repeat((fx - y),dim+1,axis=1)*X,axis=0)
@@ -1319,7 +1319,7 @@ def loglc(task=None,x=None,w=None):
             LL = newLL
             newLL = -y.T.dot(numpy.log(fx + verysmall))\
                     - noty.T.dot(numpy.log(1.-fx+verysmall))
-            #print('Iteration %d: newLL = %f.'%(t,newLL))
+            print('Iteration %d: newLL = %f.'%(t,newLL))
             # weight update:
             w -= eta*(dLLdw[:, numpy.newaxis] + 2.*lamb*w)
 
