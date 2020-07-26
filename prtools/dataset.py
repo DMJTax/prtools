@@ -179,8 +179,15 @@ class prdataset(object):
             raise TypeError("Object indices should be a integer vector "\
                     "(used all output\nfrom I=(..).nonzero()? Use only I[0]).")
         # be resistant to 'integer ndarray' indices:
+        if isinstance(key[0],numpy.ndarray):
+            key = (key[0].tolist(), key[1])
         if isinstance(key[1],numpy.ndarray):
             key = (key[0], key[1].tolist())
+        # be resistant to 'single integer' indices:
+        if isinstance(key[0],int):
+            key = ([key[0]], key[1])
+        if isinstance(key[1],int):
+            key = (key[0], [key[1]])
         # when we select columns (features), we have to take care of the
         # feature labels, because that is a *list*:
         if isinstance(key[1],slice):
