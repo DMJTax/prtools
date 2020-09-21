@@ -694,8 +694,8 @@ def knnm(task=None,x=None,w=None):
         I = numpy.argsort(D,axis=1)
         for i in range(n):
             thislab = lab[I[i,0:k]]
-            thislab.shape = (1,k)
-            out[i,:] = numpy.bincount(thislab[0],minlength=nrcl)/k
+            thislab = numpy.ndarray.flatten(thislab)
+            out[i,:] = numpy.bincount(thislab,minlength=nrcl)/k
         return out
     else:
         raise ValueError("Task '%s' is *not* defined for knnm."%task)
