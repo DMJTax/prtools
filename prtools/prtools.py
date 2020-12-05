@@ -694,6 +694,7 @@ def knnm(task=None,x=None,w=None):
         I = numpy.argsort(D,axis=1)
         for i in range(n):
             thislab = lab[I[i,0:k]]
+            # is this better?
             thislab = numpy.ndarray.flatten(thislab)
             out[i,:] = numpy.bincount(thislab,minlength=nrcl)/k
         return out

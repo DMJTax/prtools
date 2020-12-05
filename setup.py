@@ -7,5 +7,5 @@ setup(
    author='D.M.J. Tax',
    author_email='',
    packages=['prtools'],
-   install_requires=['sklearn', 'numpy', 'matplotlib', 'requests', 'mlxtend'],
+   install_requires=['sklearn', 'numpy', 'matplotlib', 'requests', 'quadprog'],
 )
