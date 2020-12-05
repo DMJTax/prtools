@@ -1211,12 +1211,13 @@ def svc(task=None,x=None,w=None):
 
     Train the support vector classifier on dataset A, using kernel K
     with kernel parameter K_par. The tradeoff between the margin and
-    training hinge loss is defined by parameter C.
+    training hinge loss is defined by parameter C. (default C=1)
 
     The following kernels K are defined:
-    'linear'    linear kernel (default)
+    'linear'    linear kernel 
     'poly'      polynomial kernel with degree K_par
     'rbf'       RBF or Gaussian kernel with width K_par
+                (default, K_par = 1.)
 
     Example:
     a = gendatb()
