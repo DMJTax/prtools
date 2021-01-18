@@ -2449,8 +2449,8 @@ def fisherm(task=None, x=None, w=None):
         cv = numpy.zeros((dim,dim))
         for i in range(c):
             xi = seldat(x,i)
-            mn[i,:] = numpy.mean(xi,axis=0)
-            cv += numpy.cov(xi,rowvar=False)
+            mn[i,:] = numpy.mean(+xi,axis=0)
+            cv += numpy.cov(+xi,rowvar=False)
         # get largest eigenvectors of S_W^-1 S_B:
         C = numpy.linalg.inv(cv)
         C = C.dot(numpy.cov(mn,rowvar=False))
