@@ -2052,7 +2052,7 @@ def plotdg(dendr):
     plt.ylabel('Fusion level')
 
 
-def gendats(n,dim=2,delta=2.):
+def gendats(n=(20,20),dim=2,delta=2.):
     """
     Generation of a simple classification data.
 
@@ -2074,7 +2074,7 @@ def gendats(n,dim=2,delta=2.):
     out.prior = prior
     return out
 
-def gendatd(n,dim=2,delta=2.):
+def gendatd(n=(20,20),dim=2,delta=2.):
     """
     Generation of a difficult classification data.
 
