@@ -280,7 +280,7 @@ def labeld(task=None,x=None,w=None):
 
     Example:
     >> a = gendatb()
-    >> lab = a*ldc(a)*labeld
+    >> lab = a*ldc(a)*labeld()
     >> print(lab)
     """
     if not isinstance(task,str):
