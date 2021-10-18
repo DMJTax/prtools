@@ -79,7 +79,7 @@ class prdataset(object):
         return outstr
 
     def __repr__(self):
-        return __str__(self)
+        return self.__str__()
 
     def float(self):
         return self.data.copy()
