@@ -1875,7 +1875,7 @@ def testr(task=None,x=None,w=None):
 
                e = testr(X)
 
-        Compute the Mean squared error error on dataset X.
+        Compute the Mean squared error on dataset X.
 
         Example:
         a = pr.gendatb([20, 20])
