@@ -78,6 +78,9 @@ class prdataset(object):
             outstr += " with continuous targets."
         return outstr
 
+    def __repr__(self):
+        return __str__(self)
+
     def float(self):
         return self.data.copy()
     def __pos__(self):
@@ -214,6 +217,8 @@ class prdataset(object):
         return newd
 
     def __setitem__(self,key,item):
+        if isinstance(item,prdataset):
+            item = +item
         self.data[key] = item
 
     def getprior(self):
