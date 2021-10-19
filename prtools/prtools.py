@@ -127,9 +127,11 @@ def proxm(task=None,x=None,w=None):
 
     Fit a proximity/kernel mapping on dataset A. The kernel is defined
     by K and its parameter K_par. The available proximities are:
+        'linear'    Standard inner product
         'eucl'      Euclidean distance
         'city'      City-block distance
         'rbf'       Radial basis function kernel with width K_par
+        'poly'      Polynomial kernel with degree K_par
 
     Example:
     >> u = proxm(('rbf',4))*nmc()
@@ -153,12 +155,16 @@ def proxm(task=None,x=None,w=None):
             R = numpy.copy(x)
         # the feature labels:
         featlab = numpy.arange(R.shape[0])
-        if (w[0]=='eucl'):
+        if (w[0]=='linear'):
+            return ('linear',R), featlab
+        elif (w[0]=='eucl'):
             return ('eucl',R), featlab
         elif (w[0]=='city'):
             return ('city',R), featlab
         elif (w[0]=='rbf'):
             return ('rbf',R,w[1]), featlab
+        elif (w[0]=='poly'):
+            return ('poly',R,w[1]), featlab
         else:
             raise ValueError("Proxm type '%s' not defined"%w[0])
     elif (task=='eval'):
@@ -167,7 +173,12 @@ def proxm(task=None,x=None,w=None):
         dat = +x
         n0 = dat.shape[0]
         n1 = W[1].shape[0]
-        if (W[0]=='eucl'):
+        if (W[0]=='linear'):
+            D = numpy.zeros((n0,n1))
+            for i in range(0,n0):
+                for j in range(0,n1):
+                    D[i,j] = numpy.dot(dat[i,:], W[1][j,:])
+        elif (W[0]=='eucl'):
             D = numpy.zeros((n0,n1))
             for i in range(0,n0):
                 for j in range(0,n1):
@@ -187,6 +198,13 @@ def proxm(task=None,x=None,w=None):
                     df = dat[i,:] - W[1][j,:]
                     d = numpy.dot(df.T,df)
                     D[i,j] = numpy.exp(-d/s)
+        elif (W[0]=='poly'):
+            degr = W[2]
+            D = numpy.zeros((n0,n1))
+            for i in range(0,n0):
+                for j in range(0,n1):
+                    d = numpy.dot(dat[i,:].T, W[1][j,:])
+                    D[i,j] = (d+1.)**degr
         else:
             raise ValueError("Proxm type '%s' not defined"%W[0])
         return D
