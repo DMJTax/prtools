@@ -305,6 +305,10 @@ class prdataset(object):
 
 
 # === useful functions =====================================
+
+def getlab(x):
+    return x.targets
+
 def scatterd(a,clrs=None):
     if (clrs is None):
         clrs = a.nlab().flatten()

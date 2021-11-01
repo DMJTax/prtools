@@ -1690,6 +1690,62 @@ def clevalf(a,u,trainsize=0.6,nrreps=5,testfunc=testc):
     plt.title('Feature curve %s' % a.name)
     return err, err_app
 
+def confmat(lab1,lab2=[]):
+    """
+    Confusion matrix
+
+           C = confmat(LAB1,LAB2)
+           C = confmat(A*W)
+
+    Compute the confusion matrix between labels LAB1 and LAB2.
+    """
+    if len(lab2)==0:
+        if isinstance(lab1,prdataset):
+            lab2 = lab1.targets
+            lab1 = lab1*labeld()
+        else:
+            raise ValueError("Supply 2 label lists or output dataset from classifier.")
+
+        
+    ll1 = numpy.unique(lab1)
+    ll2 = numpy.unique(lab2)
+    newll = numpy.unique(numpy.concatenate((ll1,ll2)))
+
+    # compute matrix
+    dim = len(newll)
+    C = numpy.zeros((dim,dim))
+    for i in range(dim):
+        I1 = (lab1==newll[i])
+        for j in range(dim):
+            I2 = (lab2==newll[j])
+            C[i,j] = sum(1*(I1&I2))
+
+    # pretty print:
+    print('True   | Estimate labels')
+    print('Labels |',end='')
+    for i in range(dim):
+        print('%6d '%newll[i],end='')
+    print('| totals')
+    hstr = 7*dim*'-'
+    print('-------+%s+------'%hstr)
+
+    for i in range(dim):
+        print("%6d |"%newll[i],end='')
+        for j in range(dim):
+            print("%6d "%C[i,j],end='')
+        sumi = sum(C[i,:])
+        print("| %d"%sumi)
+
+    print('-------+%s+------'%hstr)
+    print('Totals |',end='')
+    for i in range(dim):
+        sumi = sum(C[:,i])
+        print("%6d "%sumi,end='')
+    sumc = sum(sum(C))
+    print('| %d'%sumc)
+
+    return C
+
 def vandermondem(task=None,x=None,w=None):
     "Vandermonde Matrix"
     if not isinstance(task,str):
