@@ -1694,15 +1694,17 @@ def confmat(lab1,lab2=[]):
     """
     Confusion matrix
 
-           C = confmat(LAB1,LAB2)
+           C = confmat(LAB_TRUE,LAB_EST)
            C = confmat(A*W)
 
-    Compute the confusion matrix between labels LAB1 and LAB2.
+    Compute the confusion matrix between labels true labels LAB_TRUE and
+    estimated labels LAB_EST.
     """
     if len(lab2)==0:
         if isinstance(lab1,prdataset):
-            lab2 = lab1.targets
-            lab1 = lab1*labeld()
+            lab_true = lab1.targets
+            lab2 = lab1*labeld()
+            lab1 = lab_true
         else:
             raise ValueError("Supply 2 label lists or output dataset from classifier.")
 
