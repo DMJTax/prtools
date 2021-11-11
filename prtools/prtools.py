@@ -2896,4 +2896,30 @@ def featselb(task=None, x=None, w=None):
         raise ValueError("Task '%s' is *not* defined for feature selection."%task)
 
 
+def concatenate(items,axis=0):
+    """
+    concatenate([a1,a2,...],axis=0)
+    concatenate([w1,w2,...],axis=0)
+
+    Concatenation of prdatasets or prmappings.
+    When prmappings are combined, then axis=0 means a parallel
+    combining, and axis=1 means sequential combining.
+    """
+    N = len(items)
+    if isinstance(items[0],prdataset):
+        a = copy.deepcopy(items[0])
+        for i in range(1,N):
+            a = a.concatenate(items[i],axis=axis)
+        return a
+    else:
+        if (axis==0):
+            return parallelm(items)
+        else:
+            w = copy.deepcopy(items[0])
+            for i in range(1,N):
+                w = w*items[i]
+            return w
+
+
+
 
