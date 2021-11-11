@@ -233,6 +233,8 @@ class prmapping(object):
     def __pos__(self):
         return self.float()
 
+    def concatenate(self,other,axis=None):
+        return parallelm(self,other)
 
 def sequentialm(task=None,x=None,w=None):
     "Sequential mapping"
@@ -399,7 +401,7 @@ def fixedcc(task=None,x=None,w=None):
     u = parallelm([nmc(),ldc(),qdc()])*fixedcc('pow',3)
     w = a*u
     """
-    if (task in set(['mean','prod','min','max','pow'])):
+    if (task in set(['mean','prod','min','max','median','pow'])):
         if (task=='pow'):
             x = [task,x]
         else:
@@ -445,19 +447,21 @@ def fixedcc(task=None,x=None,w=None):
                 # product combination:
                 out[:,i:(i+1)] = numpy.prod(+xi,axis=1,keepdims=True)
             elif (w.hyperparam[0]=='min'):
-                # mean combination:
+                # min combination:
                 out[:,i:(i+1)] = numpy.min(+xi,axis=1,keepdims=True)
             elif (w.hyperparam[0]=='max'):
                 # max combination:
                 out[:,i:(i+1)] = numpy.max(+xi,axis=1,keepdims=True)
+            elif (w.hyperparam[0]=='median'):
+                # median combination:
+                out[:,i:(i+1)] = numpy.median(+xi,axis=1,keepdims=True)
             elif (w.hyperparam[0]=='pow'):
                 # powered combination:
                 out[:,i:(i+1)] = numpy.power( \
                         numpy.mean((+xi)**w.hyperparam[1],axis=1,keepdims=True),\
                         1/w.hyperparam[1])
             else:
-                raise ValueError("Combining '%s' is *not* defined for\
-                        fixedcc."%w.hyperparam)
+                raise ValueError("Combining '%s' is *not* defined for fixedcc."%w.hyperparam)
 
         if outputdataset:
             x = x.setdata(out)
@@ -597,3 +601,17 @@ def plotr(f,color=None,gridsize=100):
         out = +f(dat)
         out.shape = (gridsize,gridsize)
         ax.plot_wireframe(X0,X1,out)
+
+def meanc(x=None):
+    return fixedcc('mean',x)
+def minc(x=None):
+    return fixedcc('min',x)
+def maxc(x=None):
+    return fixedcc('max',x)
+def medianc(x=None):
+    return fixedcc('median',x)
+def prodc(x=None):
+    return fixedcc('prod',x)
+
+
+
