@@ -1826,39 +1826,54 @@ def ridger(task=None,x=None,w=None):
     Ridge Regression 
 
            w = ridger(A,LAMB)
+           w = ridger(A,(LAMB,USEBIAS))
 
     Train a ridge regression on dataset A with regularisation parameter
-    LAMB.
+    LAMB. The default solution is using a bias term, tilde(x)=[x,1],
+    but if you want no bias, set USEBIAS=False
 
     Example:
     n = 100
     x = numpy.random.rand(n,1)
     y = 0.3*x + 0.1*numpy.random.randn(n,1)
     a = gendatr(x,y)
-    w = ridger(a,(0.1))
+    w = ridger(a,(0.1))  # solution with bias
     scatterr(a)
     plotr(w)
+    w2 = ridger(a,(0.1,False))  # solution without bias
+    plotr(w2)
     """
     if not isinstance(task,str):
         out = prmapping(ridger,task,x)
         return out
     if (task=='init'):
         # just return the name, and hyperparameters
+        if isinstance(x,float): 
+            x = (x, True)
         if x is None:
-            x = 0.
+            x = (0., True)
         return 'Ridge regression', x
     elif (task=='train'):
         # we are going to train the mapping
         n,dim = x.shape
-        dat = numpy.hstack((+x,numpy.ones((n,1))))
-        Sinv = numpy.linalg.inv(dat.T.dot(dat) + w*numpy.eye(dim+1))
+        if w[1]: # we use a bias 
+            dat = numpy.hstack((+x,numpy.ones((n,1))))
+            dim += 1
+        else:
+            dat = +x
+        Sinv = numpy.linalg.inv(dat.T.dot(dat) + w[0]*numpy.eye(dim))
         beta = Sinv.dot(dat.T).dot(x.targets)
         # store the parameters, and labels:
         return beta,['target']
     elif (task=='eval'):
         # we are applying to new data
         n = x.shape[0]
-        dat = numpy.hstack((+x,numpy.ones((n,1))))
+        dim = x.shape[1]
+        if (len(w.data)>dim):
+            dat = numpy.hstack((+x,numpy.ones((n,1))))
+        else:
+            dat = +x
+
         return dat.dot(w.data)
     else:
         raise ValueError("Task '%s' is *not* defined for ridger."%task)
