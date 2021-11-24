@@ -1958,6 +1958,8 @@ def testr(task=None,x=None,w=None):
         e = testr(a)
     """
     if not isinstance(task,str):
+        if isinstance(task,prdataset) & isinstance(x,prmapping):
+            return testr(task*x)
         out = prmapping(testr)
         out.mapping_type = "trained"
         if task is not None:
@@ -1977,7 +1979,7 @@ def testr(task=None,x=None,w=None):
             err *= w
         return numpy.mean(err)
     else:
-        raise ValueError("Task '%s' is *not* defined for testc."%task)
+        raise ValueError("Task '%s' is *not* defined for testr."%task)
 
 def hclust(D, ctype, K=None):
     """
