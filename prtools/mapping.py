@@ -600,7 +600,7 @@ def plotr(f,color=None,gridsize=100):
         X1.shape = (gridsize,gridsize)
         out = +f(dat)
         out.shape = (gridsize,gridsize)
-        ax.plot_wireframe(X0,X1,out)
+        ax.plot_wireframe(X0,X1,out,color=color)
 
 def meanc(x=None):
     return fixedcc('mean',x)
