@@ -1253,8 +1253,12 @@ def svc(task=None,x=None,w=None):
             C = 1.
         else:
             kernel = x[0]
-            C = x[2]
-            x = x[1]
+            if len(x)>1:
+                C = x[2]
+                x = x[1]
+            else:
+                C = 1.
+                x = 1.
         if (kernel=='linear') or (kernel=='l'):
             clf = svm.SVC(kernel='linear',degree=x,C=C,probability=True)
         elif (kernel=='poly') or (kernel=='p'):
