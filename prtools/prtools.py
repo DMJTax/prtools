@@ -636,28 +636,29 @@ def fisherc(task=None,x=None,w=None):
         return 'Fisher', ()
     elif (task=='train'):
         # we are going to train the mapping
-        c = x.nrclasses()
+        n = x.classsizes()
         dim = x.shape[1]
-        if (c>2):
+        if (len(n)>2):
             raise ValueError('Fisher classifier is defined for two classes.')
-        mn = numpy.zeros((c,dim))
-        cv = numpy.zeros((dim,dim))
-        v0 = 0.
-        for i in range(c):
-            xi = seldat(x,i)
-            mn[i,:] = numpy.mean(+xi,axis=0)
-            thiscov = numpy.cov(+xi,rowvar=False)
-            #DXD: is this a good idea?
-            thiscov += 1e-9*numpy.eye(dim)
-            cv += thiscov
-            icv = numpy.linalg.inv(thiscov)
-            #icv = numpy.linalg.pinv(thiscov)
-            v0 += mn[i,].dot(icv.dot(mn[i,:]))/2.
-        cv /= c # normalise by nr. of classes (2)
-        v = numpy.linalg.inv(cv).dot(mn[1,:]-mn[0,:])
-        #v = numpy.linalg.pinv(cv).dot(mn[1,:]-mn[0,:])
-        # store the parameters, and labels:
-        return (v,v0),x.lablist()
+        # get the means and scatter matrices per class:
+        x0 = +seldat(x,0)  # class 0
+        m0 = numpy.mean(x0,axis=0)
+        dx = x0 - m0
+        C0 = dx.T.dot(dx)
+        x1 = +seldat(x,1)  # class 1
+        m1 = numpy.mean(x1,axis=0)
+        dx = x1 -  m1
+        C1 = dx.T.dot(dx)
+        # overall within matrix:
+        C = C0 + C1 + 1e-5*numpy.eye(dim)
+
+        # get the Fisher vector:
+        Cinv = numpy.linalg.inv(C)
+        w = Cinv.dot(m1 - m0)
+        # and the bias (borrowed from the LDA)
+        w0 = (m1+m0).dot(w)/2 - numpy.log(n[1]/n[0])
+
+        return (w,w0),x.lablist()
     elif (task=='eval'):
         # we are applying to new data
         W = w.data
