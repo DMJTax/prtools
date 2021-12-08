@@ -1586,6 +1586,8 @@ def prcrossval(a,u,k=10,nrrep=1,testfunc=testc):
     c = a.nrclasses()
     if (nrrep==1):
         # check:
+        if (k<2):
+            raise ValueError('Use k>1 for k-fold crossvalidation.')
         clsz = a.classsizes()
         if (min(clsz)<k):
             raise ValueError('Some classes are too small for the number of folds.')
@@ -1599,12 +1601,15 @@ def prcrossval(a,u,k=10,nrrep=1,testfunc=testc):
             foldnr = numpy.mod(range(clsz[i]),k)
             I[J] = foldnr
         # go!
+        print(I)
         e = numpy.zeros((k,1))
         for i in range(k):
             J = (I!=i).nonzero()
+            print(J[0])
             xtr = a[J[0],:]
             w = xtr*u
             J = (I==i).nonzero()
+            print(J[0])
             e[i] = a[J[0],:]*w*testfunc()
     else:
         e = numpy.zeros((k,nrrep))
