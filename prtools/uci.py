@@ -86,8 +86,9 @@ def read_mat(file):
     :return: a prdataset containing the features/labels read from the file
     """
     import prtools # import prtools to get its installation path
-    data = loadmat(os.path.dirname(prtools.__file__) + '/data/' + file + '.mat')
-    if file == 'diabetes' or file == 'mfeat_zer' or file == 'mfeat_pix':
+    fname = os.path.join(os.path.dirname(prtools.__file__) + '/data/' + file + '.mat')
+    data = loadmat(fname)
+    if file == 'diabetes' or file == 'mfeat_zer' or file == 'mfeat_pix'or file == 'mfeat_kar' or file == 'mfeat_mor':
         features = data['a'][0][0][0]
         labels = data['a'][0][0][1]
     else:
