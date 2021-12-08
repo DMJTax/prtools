@@ -15,4 +15,7 @@ for alpha in (0.1, 1.0, 10.0):
     print(w.data.coef_)
     err = a*w*testr()
     print("MSE = %f" % err)
+    err = testr(a,w)
+    print("MSE = %f" % err)
+
 
