@@ -153,18 +153,24 @@ def proxm(task=None,x=None,w=None):
             R = +x
         else:
             R = numpy.copy(x)
-        # the feature labels:
+        # the dissimilarity type:
+        if isinstance(w,tuple):
+            taskname = w[0]
+            param = w[1]
+        else:
+            taskname = w
+            param = []
         featlab = numpy.arange(R.shape[0])
-        if (w[0]=='linear'):
+        if (taskname=='linear'):
             return ('linear',R), featlab
-        elif (w[0]=='eucl'):
+        elif (taskname=='eucl'):
             return ('eucl',R), featlab
-        elif (w[0]=='city'):
+        elif (taskname=='city'):
             return ('city',R), featlab
-        elif (w[0]=='rbf'):
-            return ('rbf',R,w[1]), featlab
-        elif (w[0]=='poly'):
-            return ('poly',R,w[1]), featlab
+        elif (taskname=='rbf'):
+            return ('rbf',R,param), featlab
+        elif (taskname=='poly'):
+            return ('poly',R,param), featlab
         else:
             raise ValueError("Proxm type '%s' not defined"%w[0])
     elif (task=='eval'):
@@ -2084,6 +2090,9 @@ def hclust(D, ctype, K=None):
         elif (ctype=='complete'):
             # use 'masked_invalid' to ignore the infinities on the diag
             newD = numpy.max(numpy.ma.masked_invalid(D[ind,:]),axis=0)
+        else:
+            print("Unknown clustering type.")
+            print(ctype)
         dendr[k,0] = ind[0]
         dendr[k,1] = ind[1]
         dendr[k,2] = D[ind[0],ind[1]]
