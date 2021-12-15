@@ -1786,7 +1786,7 @@ def vandermondem(task=None,x=None,w=None):
         n = x.shape[0]
         dat = numpy.ones((n,1))
         for i in range(w.hyperparam):
-            XX = pow(x,i+1)
+            XX = pow(+x,i+1)
             dat = numpy.hstack((dat,XX))
         return dat
     else:
