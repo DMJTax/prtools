@@ -1759,7 +1759,14 @@ def confmat(lab1,lab2=[]):
     return C
 
 def vandermondem(task=None,x=None,w=None):
-    "Vandermonde Matrix"
+    """
+    Vandermonde Matrix
+
+       Z = vandermondem(X,D)
+
+    Extend the input matrix X by higher orders X.^n, up to degree D.
+    For D=0 you only get a constant 1 back
+    """
     if not isinstance(task,str):
         out = prmapping(vandermondem,task,x)
         out.mapping_type = "trained"
@@ -1777,10 +1784,9 @@ def vandermondem(task=None,x=None,w=None):
     elif (task=='eval'):
         # we are applying to new data
         n = x.shape[0]
-        XX = +x
-        dat = numpy.hstack((numpy.ones((n,1)),XX))
-        for i in range(1,w.hyperparam):
-            XX *= +x
+        dat = numpy.ones((n,1))
+        for i in range(w.hyperparam):
+            XX = pow(x,i+1)
             dat = numpy.hstack((dat,XX))
         return dat
     else:
