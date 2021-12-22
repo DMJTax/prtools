@@ -2090,9 +2090,12 @@ def hclust(D, ctype, K=None):
         elif (ctype=='complete'):
             # use 'masked_invalid' to ignore the infinities on the diag
             newD = numpy.max(numpy.ma.masked_invalid(D[ind,:]),axis=0)
+        elif (ctype=='average'):
+            # use 'masked_invalid' to ignore the infinities on the diag
+            newD = numpy.mean(numpy.ma.masked_invalid(D[ind,:]),axis=0)
         else:
-            print("Unknown clustering type.")
-            print(ctype)
+            raise ValueError("This clustering is not implemented yet.")
+
         dendr[k,0] = ind[0]
         dendr[k,1] = ind[1]
         dendr[k,2] = D[ind[0],ind[1]]
