@@ -246,7 +246,7 @@ class prdataset(object):
             out.targets = numpy.concatenate((out.targets,other.targets),axis=0)
             out._targets_ = numpy.concatenate((out._targets_,other._targets_),axis=0)
         elif (axis==1):
-            newfeatlab = numpy.concatenate((out.featlab,out.featlab))
+            newfeatlab = numpy.concatenate((out.featlab,other.featlab))
             out = out.setdata(numpy.concatenate((out.data,other.data),axis=1))
             out.featlab = newfeatlab
         else:
