@@ -8,7 +8,7 @@ setup(
    author='D.M.J. Tax',
    author_email='',
    packages=['prtools'],
-   install_requires=['sklearn', 'numpy', 'matplotlib', 'requests'],
+   install_requires=['scikit-learn', 'numpy', 'matplotlib', 'requests'],
    package_data={
        'prtools': [os.path.join('data','*.mat')],
        },
