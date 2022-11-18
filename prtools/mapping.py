@@ -490,6 +490,18 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
     scatterd(a)
     plotc(w)
     """
+
+    if isinstance(f,list):
+        n = len(f)
+        h = []
+        labs = []
+        for i in range(n):
+            thish = plotc(f[i],levels,colors,gridsize)
+            h.append(thish[0])
+            labs.append(f[i].name)
+        plt.legend(h,labs);
+        return
+
     ax = plt.gca()
     if colors is None:
         colors = next(ax._get_lines.prop_cycler)['color']
@@ -515,7 +527,9 @@ def plotc(f,levels=[0.0],colors=None,gridsize = 30):
         z = out[:,i] - numpy.amax(otherout,axis=1)
         z.shape = (gridsize,gridsize)
         CS = plt.contour(x,y,z,levels,colors=colors)
-    CS.collections[0].set_label(f.name)
+    #CS.collections[0].set_label(f.name)
+    h1,l1 = CS.legend_elements()
+    return h1
 
 def plotm(f,nrlevels=10,colors=None,gridsize = 30):
     """
