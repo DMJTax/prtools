@@ -1102,6 +1102,8 @@ def stumpc(task=None,x=None,w=None):
         # allow weights:
         n,dim = x.shape
         w = x.gettargets('weights')
+        if w is None:
+            w = numpy.ones((n,1))
         if (len(w)==0):
             w = numpy.ones((n,1))
         w /= numpy.sum(w)
@@ -1125,7 +1127,7 @@ def stumpc(task=None,x=None,w=None):
                 if (J==0):
                     bestthres = X[0,f] - 1e-6
                 elif (J==n):
-                    bestthres = X[n,f] + 1e-6
+                    bestthres = X[n-1,f] + 1e-6
                 else:
                     bestthres = (X[I[J],f]+X[I[J-1],f])/2.
                 #print("Better feature %d, th=%f, sg=+, has error %f"%(f,bestthres,sumlab[J]))
