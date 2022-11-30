@@ -241,6 +241,8 @@ class prdataset(object):
                 raise ValueError('Datasets do not match size.')
 
         out = copy.deepcopy(self)
+        if not isinstance(other,prdataset):
+            other = prdataset(other)
         if (axis==0):
             out = out.setdata(numpy.concatenate((out.data,other.data),axis=0))
             out.targets = numpy.concatenate((out.targets,other.targets),axis=0)
