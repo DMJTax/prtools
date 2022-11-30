@@ -1663,10 +1663,11 @@ def cleval(a,u,trainsize=[2,3,5,10,20,30],nrreps=3,testfunc=testc):
             label=u.name)
     thiscolor = h[0].get_color()
     plt.errorbar(trainsize,numpy.mean(err_app,axis=1),numpy.std(err_app,axis=1),\
-            fmt='--',color=thiscolor)
+            fmt='--',color=thiscolor,label='Apparent error')
     plt.xlabel('Nr. train objects per class')
     plt.ylabel('Error')
     plt.title('Learning curve %s' % a.name)
+    plt.legend()
     return err, err_app
 
 def clevalf(a,u,trainsize=0.6,nrreps=5,testfunc=testc):
