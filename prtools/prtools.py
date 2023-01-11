@@ -1050,13 +1050,28 @@ def mogc(task=None,x=None,w=None):
     return mogm(task,x,w)*bayesrule()
 
 def baggingc(task=None,x=None,w=None):
-    "Bagging"
+"""
+Bagging classifier
+        W = baggingc(A, (U,K) )
+
+Fit a Bagging classifier on dataset A. For this, the untrained mapping U
+is fitted K times, and combined.
+
+Example, to perform bagging on the 1-Nearest neighbor classifier,
+combining 100 classifiers:
+>> a = gendatb([50,50])
+>> w = baggingc(a,(knnc([],1), 100))
+>> scatterd(a)
+>> plotc(w)
+"""
     if not isinstance(task,str):
         return prmapping(baggingc,task,x)
     if (task=='init'):
         # just return the name, and hyperparameters
         if x is None:
             x = (nmc,100)
+        if len(x)==1:
+            x = (nmc, 100)
         return 'Baggingc', x
     elif (task=='train'):
         # we are going to train the mapping
