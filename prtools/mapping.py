@@ -515,6 +515,15 @@ def plotc(f, levels=[0.0], colors=None, gridsize=30):
 
     ax = plt.gca()
 
+    # get the colors if they are not defined yet
+    # First check if prop_cycler is defined:
+    if (
+        colors is None
+        and hasattr(ax, "_get_lines")
+        and hasattr(ax._get_lines, "prop_cycler")
+    ):
+        colors = next(ax._get_lines.prop_cycler)["color"]
+
     xl = ax.get_xlim()
     yl = ax.get_ylim()
     dx = (xl[1] - xl[0]) / (gridsize - 1)
