@@ -523,6 +523,8 @@ def plotc(f, levels=[0.0], colors=None, gridsize=30):
         and hasattr(ax._get_lines, "prop_cycler")
     ):
         colors = next(ax._get_lines.prop_cycler)["color"]
+    else:
+        colors = "r"
 
     xl = ax.get_xlim()
     yl = ax.get_ylim()
