@@ -54,6 +54,7 @@ def scalem(task=None,x=None,w=None):
 import numpy
 import copy
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 from sklearn import linear_model
 
 from .dataset import prdataset
@@ -569,7 +570,10 @@ def plotm(f, nrlevels=10, colors=None, gridsize=30):
     """
     ax = plt.gca()
     if colors is None:
-        colors = next(ax._get_lines.prop_cycler)["color"]
+        if (hasattr(ax, "_get_lines") and hasattr(ax._get_lines, "prop_cycler")):
+            colors = next(ax._get_lines.prop_cycler)["color"]
+        else:
+            colors = ax._get_lines.get_next_color()
     xl = ax.get_xlim()
     dx = (xl[1] - xl[0]) / (gridsize - 1)
     x = numpy.arange(xl[0], xl[1] + 0.01 * dx, dx)
@@ -597,7 +601,10 @@ def plotm(f, nrlevels=10, colors=None, gridsize=30):
         levels = numpy.linspace(numpy.min(z), numpy.max(z), nrlevels)
         z.shape = (gridsize, gridsize)
         CS = plt.contour(x, y, z, levels, colors=colors)
-    CS.collections[0].set_label(f.name)
+    # Create a proxy "patch" with the desired color
+    proxy = Patch(color=colors)  # the color of the label
+    # Add legend using the proxy
+    plt.legend([proxy], [f.name],handlelength=2.5, handleheight=0.1)
 
 
 def plotr(f, color=None, gridsize=100):
@@ -616,7 +623,10 @@ def plotr(f, color=None, gridsize=100):
     """
     ax = plt.gca()
     if color is None:
-        color = next(ax._get_lines.prop_cycler)["color"]
+        if (hasattr(ax, "_get_lines") and hasattr(ax._get_lines, "prop_cycler")):
+            color = next(ax._get_lines.prop_cycler)["color"]
+        else:
+            color = ax._get_lines.get_next_color()
     xl = ax.get_xlim()
     dx = (xl[1] - xl[0]) / (gridsize - 1)
     if f.shape[0] == 1:

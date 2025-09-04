@@ -132,11 +132,12 @@ class prdataset(object):
 
     def lablist(self):
         return numpy.unique(self.targets)
+
     def nlab(self):
         (ll,I) = numpy.unique(self.targets,return_inverse=True)
         I = numpy.array(I)
-        I = I[:,numpy.newaxis] # python is so terrible..:-(
         return I
+
     def signlab(self,posclass=1):  # what is a good default?
         ll = self.lablist()
         if (len(ll)>2):
@@ -147,6 +148,7 @@ class prdataset(object):
         else:
             lab = 2.0*lab-1
         return lab
+
     def setdata(self,data):
         self.data = data
         self.shape = data.shape
@@ -167,9 +169,11 @@ class prdataset(object):
             for i in range(len(ll)):
                 count[i] = numpy.sum(1.*(self.targets==ll[i]))
         return count
+
     def nrclasses(self):
         ll = numpy.unique(self.targets)
         return len(ll)
+
     def findclass(self,cname):
         ll = numpy.unique(self.targets)
         I = numpy.where(ll==cname)
