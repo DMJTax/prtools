@@ -240,20 +240,19 @@ class prdataset(object):
             else:
                 raise ValueError('Datasets do not match size.')
 
-        out = copy.deepcopy(self)
         if not isinstance(other,prdataset):
             other = prdataset(other)
         if (axis==0):
-            out = out.setdata(numpy.concatenate((out.data,other.data),axis=0))
-            out.targets = numpy.concatenate((out.targets,other.targets),axis=0)
-            out._targets_ = numpy.concatenate((out._targets_,other._targets_),axis=0)
+            self = self.setdata(numpy.concatenate((self.data,other.data),axis=0))
+            self.targets = numpy.concatenate((self.targets,other.targets),axis=0)
+            self._targets_ = numpy.concatenate((self._targets_,other._targets_),axis=0)
         elif (axis==1):
-            newfeatlab = numpy.concatenate((out.featlab,other.featlab))
-            out = out.setdata(numpy.concatenate((out.data,other.data),axis=1))
-            out.featlab = newfeatlab
+            newfeatlab = numpy.concatenate((self.featlab,other.featlab))
+            self = self.setdata(numpy.concatenate((self.data,other.data),axis=1))
+            self.featlab = newfeatlab
         else:
             raise ValueError("Concatenation is only possible along axis 0 or 1.")
-        return out
+        return self
 
     def settargets(self,labelname,targets):
         # does the size match?
