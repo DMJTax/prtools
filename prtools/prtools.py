@@ -2961,8 +2961,8 @@ def featselb(task=None, x=None, w=None):
 
 def concatenate(items,axis=0):
     """
-    concatenate([a1,a2,...],axis=0)
-    concatenate([w1,w2,...],axis=0)
+    a = concatenate([a1,a2,...],axis=0)
+    w = concatenate([w1,w2,...],axis=0)
 
     Concatenation of prdatasets or prmappings.
     When prmappings are combined, then axis=0 means a parallel
